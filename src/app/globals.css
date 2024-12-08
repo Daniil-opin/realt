@@ -1,21 +1,114 @@
+@import url("https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Raleway:wght@100..900&display=swap");
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root {
   --background: #ffffff;
-  --foreground: #171717;
+  --foreground: #000;
+  --blue: #2f6feb;
+  --grey-blue: #959fb3;
+  --smooth-blue: #dde4f1;
+  --light-blue: #f1f8ff;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+* {
+  font-size: 1rem;
+  line-height: 1.5;
+  font-weight: 400;
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-variant-numeric: lining-nums proportional-nums;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  scroll-behavior: smooth;
+  min-height: 100vh;
+  min-width: 100%;
 }
 
 body {
   color: var(--foreground);
-  background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--light-blue);
+  font-family: "Raleway", sans-serif;
+  display: flex;
+  flex-direction: column;
+}
+
+.container {
+  max-width: 1712px;
+}
+
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+input[type="number"] {
+  -moz-appearance: textfield;
+}
+
+.custom-scrollbar {
+  scrollbar-width: auto;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 2px;
+  height: 2px;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.custom-small-scrollbar::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.custom-scrollbar:hover::-webkit-scrollbar {
+  opacity: 1;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background-color: var(--blue);
+  border-radius: 4px;
+}
+
+@media (hover: hover) {
+  .custom-scrollbar:hover::-webkit-scrollbar-thumb {
+    background-color: var(--blue);
+  }
+}
+
+@media (hover: none) and (pointer: coarse) {
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background-color: var(--blue);
+  }
+  .custom-scrollbar::-webkit-scrollbar {
+    opacity: 1;
+  }
 }

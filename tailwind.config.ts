@@ -1,4 +1,4 @@
-import type { Config } from "tailwindcss";
+import { Config } from "tailwindcss";
 
 export default {
   content: [
@@ -11,6 +11,20 @@ export default {
       colors: {
         background: "var(--background)",
         foreground: "var(--foreground)",
+        blue: "var(--blue)",
+        greyblue: "var(--grey-blue)",
+        lightblue: "var(--light-blue)",
+        smooth: "var(--smooth-blue)",
+      },
+      container: {
+        padding: "1.5rem",
+        center: true,
+      },
+      screens: {
+        "3xl": "1760px",
+      },
+      fontFamily: {
+        poppins: ["Poppins", "sans-serif"],
       },
     },
   },
