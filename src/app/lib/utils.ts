@@ -50,7 +50,7 @@ export const getProcessedSrc = (src: string): string => {
   }
 
   if (!src.startsWith("http://") && !src.startsWith("https://")) {
-    return `${API_BASE_URL}/${src}?t=${new Date().getTime()}`;
+    return `${API_BASE_URL}${src}?t=${new Date().getTime()}`;
   }
 
   return `${src}?t=${new Date().getTime()}`;

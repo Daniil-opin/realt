@@ -1,4 +1,3 @@
-// UserSale.tsx
 "use client";
 
 import { useState, useEffect } from "react";
@@ -7,17 +6,21 @@ import {
   ChevronDownIcon,
   XMarkIcon,
 } from "@heroicons/react/24/outline";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
 import { InputText } from "../input/text";
 import { InputNumber } from "../input/number";
 import InputTextarea from "../input/textarea";
 import Image from "next/image";
-import YandexMap from "../map/yandex";
+import dynamic from "next/dynamic";
 import { InputCheckbox } from "../input/consent";
 import { InputFileImage } from "../input/file";
 import { convertFileToBase64 } from "@/app/lib/utils";
+import {
+  EstateCreate,
+  LocalityType,
+  Period,
+  StreetType,
+} from "@/app/lib/definitions";
+import { createEstate } from "@/app/seed/route";
 
 interface SelectOption {
   value: string;
@@ -32,6 +35,11 @@ interface SelectionCategoryProps {
   selectedValue: string;
   onSelect: (value: string) => void;
 }
+
+const YandexMap = dynamic(() => import("../map/yandex"), {
+  ssr: false,
+  loading: () => <p>Загрузка карты...</p>,
+});
 
 const SelectionCategory: React.FC<SelectionCategoryProps> = ({
   title,
@@ -71,91 +79,32 @@ const SelectionCategory: React.FC<SelectionCategoryProps> = ({
   );
 };
 
-// Определение схемы валидации с помощью Zod
-const formSchema = z.object({
-  dealType: z.enum(["buy", "rent"]).default("buy"),
-  propertyType: z.enum(["residential", "commercial"]).default("residential"),
-  propertyKind: z
-    .enum(["apartment", "room", "house", "office", "garage", "warehouse"])
-    .default("apartment"),
-  coordinates: z.tuple([z.number(), z.number()]).default([53.9025, 27.5615]),
-  address: z.object({
-    region: z.string().default(""),
-    district: z.string().default(""),
-    localityType: z.enum(["village", "town", "agrotown"]).default("village"),
-    locality: z.string().default(""),
-    streetType: z
-      .enum(["street", "avenue", "alley", "boulevard"])
-      .default("street"),
-    street: z.string().default(""),
-    house: z.string().default(""),
-    floor: z.string().default(""),
-    corpus: z.string().default(""),
-  }),
-  amenities: z
-    .object({
-      internet: z.boolean().default(false),
-      elevator: z.boolean().default(false),
-      conditioner: z.boolean().default(false),
-      heating: z.boolean().default(false),
-      parking: z.boolean().default(false),
-      furniture: z.boolean().default(false),
-      watersupply: z.boolean().default(false),
-    })
-    .optional(),
-  characteristics: z.object({
-    rooms: z.string().default(""),
-    totalArea: z.string().default(""),
-    livingArea: z.string().default(""),
-    year: z.string().default(""),
-    period: z.enum(["long", "short"]).default("long"),
-    price: z.string().default(""),
-    payment: z.boolean().optional().default(false),
-  }),
-  description: z.string().default(""),
-  images: z.array(z.string()).max(4).default([]),
-});
-
-type FormData = z.infer<typeof formSchema>;
-
 export default function UserSale() {
-  const [images, setImages] = useState<string[]>([]);
-  const [imageFiles, setImageFiles] = useState<File[]>([]); // Для хранения файлов, если понадобится
-
-  const {
-    register,
-    handleSubmit,
-    control,
-    setValue,
-    watch,
-    formState: { errors },
-  } = useForm<FormData>({
-    resolver: zodResolver(formSchema),
-    defaultValues: formSchema.parse({}),
-  });
-
-  const propertyType = watch("propertyType");
-  const dealType = watch("dealType");
   const [coordinates, setCoordinates] = useState<[number, number]>([
     53.9025, 27.5615,
   ]);
+  const [dealType, setDealType] = useState<string>("buy");
+  const [propertyType, setPropertyType] = useState<string>("residential");
+  const [propertyKind, setPropertyKind] = useState<string>("apartment");
+  const [images, setImages] = useState<{ file: File; base64: string }[]>([]);
+  const [payment, setPayment] = useState<boolean>(false);
 
   const localityOptions = [
-    { value: "village", label: "д." },
-    { value: "town", label: "г." },
-    { value: "agrotown", label: "аг." },
+    { value: LocalityType.Village, label: "д." },
+    { value: LocalityType.Town, label: "г." },
+    { value: LocalityType.Agrotown, label: "аг." },
   ];
 
   const streetOptions = [
-    { value: "street", label: "ул." },
-    { value: "avenue", label: "пр." },
-    { value: "alley", label: "пер." },
-    { value: "boulevard", label: "бул." },
+    { value: StreetType.Street, label: "ул." },
+    { value: StreetType.Avenue, label: "пр." },
+    { value: StreetType.Alley, label: "пер." },
+    { value: StreetType.Boulevard, label: "бул." },
   ];
 
   const periodOptions = [
-    { value: "long", label: "Длительный" },
-    { value: "short", label: "Кратковременный" },
+    { value: Period.Long, label: "Длительный" },
+    { value: Period.Short, label: "Кратковременный" },
   ];
 
   const dealTypeOptions: SelectOption[] = [
@@ -226,25 +175,22 @@ export default function UserSale() {
 
   const handleCoordinatesChange = (coords: [number, number]) => {
     setCoordinates(coords);
-    setValue("coordinates", coords);
     console.log("Новые координаты:", coords);
   };
 
-  // Установка значения по умолчанию для propertyKind при изменении propertyType
   useEffect(() => {
     if (propertyType === "residential") {
-      setValue("propertyKind", "apartment");
+      setPropertyKind("apartment");
     } else if (propertyType === "commercial") {
-      setValue("propertyKind", "office");
+      setPropertyKind("office");
     }
-  }, [propertyType, setValue]);
+  }, [propertyType]);
 
-  // Обработка загрузки файлов
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files) return;
 
-    const newImages: string[] = [];
+    const newImages: { file: File; base64: string }[] = [];
 
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
@@ -258,35 +204,142 @@ export default function UserSale() {
       }
       try {
         const base64 = await convertFileToBase64(file);
-        newImages.push(base64);
+        newImages.push({ file, base64 });
       } catch (error) {
         console.error("Ошибка при конвертации файла:", error);
       }
     }
 
-    setImages((prev) => {
-      const updated = [...prev, ...newImages].slice(0, 4);
-      setValue("images", updated);
-      return updated;
-    });
+    setImages((prev) => [...prev, ...newImages]);
   };
 
-  // Удаление фотографии
   const handleRemoveImage = (index: number) => {
-    setImages((prev) => {
-      const updated = prev.filter((_, i) => i !== index);
-      setValue("images", updated);
-      return updated;
-    });
+    setImages((prev) => prev.filter((_, i) => i !== index));
   };
 
-  // Обработка отправки формы
-  const onSubmit = (data: FormData) => {
-    // Установка координат из состояния
-    data.coordinates = coordinates;
+  // Используем роутер для перенаправления
+  // const router = useRouter();
 
-    // Логирование данных формы
-    console.log("Данные формы:", data);
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    const formData: EstateCreate = {
+      deal_type: dealType,
+      property_type: propertyType,
+      property_kind: propertyKind,
+      latitude: coordinates[0],
+      longitude: coordinates[1],
+      description:
+        (document.getElementById("description") as HTMLTextAreaElement)
+          ?.value || undefined,
+      address: {
+        region:
+          (document.getElementById("region") as HTMLInputElement)?.value ||
+          undefined,
+        district:
+          (document.getElementById("district") as HTMLInputElement)?.value ||
+          undefined,
+        locality_type:
+          (document.getElementById("localityType") as HTMLSelectElement)
+            ?.value || undefined,
+        locality:
+          (document.getElementById("locality") as HTMLInputElement)?.value ||
+          undefined,
+        street_type:
+          (document.getElementById("streetType") as HTMLSelectElement)?.value ||
+          undefined,
+        street:
+          (document.getElementById("street") as HTMLInputElement)?.value ||
+          undefined,
+        house:
+          (document.getElementById("house") as HTMLInputElement)?.value ||
+          undefined,
+        floor:
+          (document.getElementById("floor") as HTMLInputElement)?.value ||
+          undefined,
+        corpus:
+          (document.getElementById("corpus") as HTMLInputElement)?.value ||
+          undefined,
+      },
+      amenities:
+        propertyType === "residential"
+          ? {
+              internet: (
+                document.getElementById("internet") as HTMLInputElement
+              ).checked,
+              elevator: (
+                document.getElementById("elavator") as HTMLInputElement
+              ).checked,
+              conditioner: (
+                document.getElementById("conditioner") as HTMLInputElement
+              ).checked,
+              heating: (document.getElementById("heating") as HTMLInputElement)
+                .checked,
+              parking: (document.getElementById("parking") as HTMLInputElement)
+                .checked,
+              furniture: (
+                document.getElementById("furniture") as HTMLInputElement
+              ).checked,
+              watersupply: (
+                document.getElementById("watersupply") as HTMLInputElement
+              ).checked,
+            }
+          : undefined, // Заменили null на undefined
+      characteristics: {
+        rooms:
+          parseInt(
+            (document.getElementById("rooms") as HTMLInputElement)?.value ||
+              "0",
+          ) || undefined,
+        total_area:
+          parseFloat(
+            (document.getElementById("totalArea") as HTMLInputElement)?.value ||
+              "0",
+          ) || undefined,
+        living_area:
+          parseFloat(
+            (document.getElementById("livingArea") as HTMLInputElement)
+              ?.value || "0",
+          ) || undefined,
+        year:
+          parseInt(
+            (document.getElementById("year") as HTMLInputElement)?.value || "0",
+          ) || undefined,
+        period:
+          (document.getElementById("period") as HTMLSelectElement)?.value ||
+          "long",
+        price:
+          parseFloat(
+            (document.getElementById("price") as HTMLInputElement)?.value ||
+              "0",
+          ) || undefined,
+        payment:
+          dealType === "rent"
+            ? (document.getElementById("payment") as HTMLInputElement)?.checked
+            : undefined,
+      },
+      images: images.map((img) => ({
+        image_base64: img.base64.startsWith("data:image")
+          ? img.base64.split(",")[1]
+          : img.base64,
+      })),
+    };
+
+    try {
+      const authToken = localStorage.getItem("token") || undefined;
+
+      if (!authToken) {
+        alert("Вы должны войти в систему для создания недвижимости.");
+        return;
+      }
+
+      // Отправляем данные на сервер
+      const createdEstate = await createEstate(formData, authToken);
+
+      console.log("Созданная недвижимость:", createdEstate);
+    } catch (error) {
+      alert(`Ошибка при создании недвижимости: ${error}`);
+    }
   };
 
   return (
@@ -299,15 +352,15 @@ export default function UserSale() {
           <SelectionCategory
             title="Тип сделки"
             options={dealTypeOptions}
-            selectedValue={watch("dealType")}
-            onSelect={(value) => setValue("dealType", value)}
+            selectedValue={dealType}
+            onSelect={setDealType}
           />
 
           <SelectionCategory
             title="Тип недвижимости"
             options={propertyTypeOptions}
-            selectedValue={watch("propertyType")}
-            onSelect={(value) => setValue("propertyType", value)}
+            selectedValue={propertyType}
+            onSelect={setPropertyType}
           />
 
           <div className="space-y-8">
@@ -316,9 +369,9 @@ export default function UserSale() {
               {filteredPropertyKinds.map((option) => (
                 <div
                   key={option.value}
-                  onClick={() => setValue("propertyKind", option.value)}
+                  onClick={() => setPropertyKind(option.value)}
                   className={`flex w-full max-w-64 cursor-pointer items-center justify-center space-x-2 rounded-xl border border-smooth bg-white px-8 py-5 ${
-                    watch("propertyKind") === option.value
+                    propertyKind === option.value
                       ? "scale-105 transform opacity-100"
                       : "opacity-50 hover:opacity-70"
                   }`}
@@ -344,12 +397,13 @@ export default function UserSale() {
             <YandexMap
               onCoordinatesChange={handleCoordinatesChange}
               editable={true}
+              height="500px"
             />
           </div>
         </div>
         <form
           className="space-y-8 rounded-[20px] bg-white p-10"
-          onSubmit={handleSubmit(onSubmit)}
+          onSubmit={handleSubmit}
         >
           <div className="space-y-5">
             <h2 className="text-lg font-semibold">Фото</h2>
@@ -357,7 +411,7 @@ export default function UserSale() {
               {images.map((img, index) => (
                 <div key={index} className="relative">
                   <Image
-                    src={img}
+                    src={img.base64}
                     alt={`Фото ${index + 1}`}
                     width={100}
                     height={100}
@@ -388,26 +442,16 @@ export default function UserSale() {
             <div className="space-y-4">
               <h3 className="text-base font-semibold">Адрес</h3>
               <div className="space-y-3">
-                <InputText
-                  {...register("address.region")}
-                  label=""
-                  placeholder="Область"
-                />
-                <InputText
-                  {...register("address.district")}
-                  label=""
-                  placeholder="Район"
-                />
+                <InputText id="region" label="" placeholder="Область" />
+                <InputText id="district" label="" placeholder="Район" />
                 <div className="flex space-x-2">
                   <CustomSelect
                     className="min-h-full"
                     id="localityType"
                     options={localityOptions}
-                    {...register("address.localityType")}
                   />
                   <InputText
-                    id="street"
-                    {...register("address.locality")}
+                    id="locality"
                     label=""
                     placeholder="Населённый пункт"
                   />
@@ -417,29 +461,12 @@ export default function UserSale() {
                     className="min-h-full"
                     id="streetType"
                     options={streetOptions}
-                    {...register("address.streetType")}
                   />
-                  <InputText
-                    {...register("address.street")}
-                    label=""
-                    placeholder="Название"
-                  />
+                  <InputText id="street" label="" placeholder="Название" />
                 </div>
-                <InputNumber
-                  {...register("address.house")}
-                  label=""
-                  placeholder="Дом"
-                />
-                <InputNumber
-                  {...register("address.floor")}
-                  label=""
-                  placeholder="Этаж"
-                />
-                <InputNumber
-                  {...register("address.corpus")}
-                  label=""
-                  placeholder="Корпус"
-                />
+                <InputNumber id="house" label="" placeholder="Дом" />
+                <InputNumber id="floor" label="" placeholder="Этаж" />
+                <InputNumber id="corpus" label="" placeholder="Корпус" />
               </div>
             </div>
           </div>
@@ -456,7 +483,7 @@ export default function UserSale() {
                       className="text-sm"
                       id="internet"
                       label="Интернет"
-                      {...register("amenities.internet")}
+                      placeholder=""
                     />
                   </div>
                   <div className="space-y-3">
@@ -464,9 +491,9 @@ export default function UserSale() {
                       width={24}
                       height={24}
                       className="text-sm"
-                      id="elevator"
+                      id="elavator"
                       label="Лифт"
-                      {...register("amenities.elevator")}
+                      placeholder=""
                     />
                   </div>
                   <div className="space-y-3">
@@ -476,7 +503,7 @@ export default function UserSale() {
                       className="text-sm"
                       id="conditioner"
                       label="Кондиционер"
-                      {...register("amenities.conditioner")}
+                      placeholder=""
                     />
                   </div>
                   <div className="space-y-3">
@@ -486,7 +513,7 @@ export default function UserSale() {
                       className="text-sm"
                       id="heating"
                       label="Отопление"
-                      {...register("amenities.heating")}
+                      placeholder=""
                     />
                   </div>
                   <div className="space-y-3">
@@ -496,7 +523,7 @@ export default function UserSale() {
                       className="text-sm"
                       id="parking"
                       label="Парковка"
-                      {...register("amenities.parking")}
+                      placeholder=""
                     />
                   </div>
                   <div className="space-y-3">
@@ -506,7 +533,7 @@ export default function UserSale() {
                       className="text-sm"
                       id="furniture"
                       label="Мебель"
-                      {...register("amenities.furniture")}
+                      placeholder=""
                     />
                   </div>
                   <div className="space-y-3">
@@ -516,7 +543,7 @@ export default function UserSale() {
                       className="text-sm"
                       id="watersupply"
                       label="Водоснабжение"
-                      {...register("amenities.watersupply")}
+                      placeholder=""
                     />
                   </div>
                 </div>
@@ -526,7 +553,7 @@ export default function UserSale() {
             <div className="space-y-4">
               <div className="space-y-3">
                 <InputNumber
-                  {...register("characteristics.rooms")}
+                  id="rooms"
                   label=""
                   placeholder="Количество комнат"
                 />
@@ -534,7 +561,7 @@ export default function UserSale() {
               <div className="space-y-3">
                 <InputNumber
                   allowDecimal={true}
-                  {...register("characteristics.totalArea")}
+                  id="totalArea"
                   label=""
                   placeholder="Общая площадь"
                 />
@@ -542,32 +569,26 @@ export default function UserSale() {
               <div className="space-y-3">
                 <InputNumber
                   allowDecimal={true}
-                  {...register("characteristics.livingArea")}
+                  id="livingArea"
                   label=""
                   placeholder="Жилая площадь"
                 />
               </div>
               <div className="space-y-3">
-                <InputNumber
-                  {...register("characteristics.year")}
-                  label=""
-                  placeholder="Год"
-                />
+                <InputNumber id="year" label="" placeholder="Год" />
               </div>
               <div className="space-y-3">
                 <CustomSelect
                   className="h-[54px]"
                   id="period"
                   options={periodOptions}
-                  {...register("characteristics.period")}
+                  placeholder=""
                 />
               </div>
               <div className="space-y-3">
                 <InputNumber
-                  {...register("characteristics.price")}
-                  label={
-                    dealType === "buy" ? "Стоимость" : "Стоимость за месяц"
-                  }
+                  id="price"
+                  label=""
                   placeholder={
                     dealType === "buy"
                       ? "Введите стоимость"
@@ -575,22 +596,21 @@ export default function UserSale() {
                   }
                 />
               </div>
-              {dealType === "rent" && (
-                <div className="space-y-3">
-                  <InputCheckbox
-                    className="text-sm"
-                    id="payment"
-                    label="Предоплата"
-                    {...register("characteristics.payment")}
-                  />
-                </div>
-              )}
+              <div className="space-y-3">
+                <InputCheckbox
+                  className="text-sm"
+                  id="payment"
+                  label="Предоплата"
+                  placeholder=""
+                  checked={payment}
+                  onChange={() => setPayment((prev) => !prev)}
+                />
+              </div>
             </div>
           </div>
           <div className="space-y-5">
             <h2 className="text-lg font-semibold">Описание</h2>
             <InputTextarea
-              {...register("description")}
               label=""
               placeholder="Краткое описание привлекает больше внимания."
               id="description"
@@ -613,8 +633,6 @@ interface CustomSelectProps {
   options: { value: string; label: string }[];
   placeholder?: string;
   className?: string;
-  // Добавляем пропсы для useForm
-  [key: string]: any;
 }
 
 const CustomSelect: React.FC<CustomSelectProps> = ({
@@ -622,14 +640,12 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
   options,
   placeholder,
   className = "",
-  ...rest
 }) => {
   return (
     <div className={`relative ${className}`}>
       <select
         id={id}
         className="block min-h-full w-full min-w-20 appearance-none rounded-lg border border-smooth bg-white px-4 py-2 text-sm leading-none text-black focus:border-blue focus:outline-none"
-        {...rest}
       >
         {!!placeholder && (
           <option value="" disabled>

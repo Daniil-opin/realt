@@ -32,6 +32,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isAdmin, setIsAdmin] = useState<boolean>(false);
 
+  console.log(user);
+
   const router = useRouter();
 
   const login = async (token: string) => {

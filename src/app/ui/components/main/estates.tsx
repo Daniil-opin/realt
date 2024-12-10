@@ -33,7 +33,7 @@ export default function Estate() {
             <span>Купля</span>
           </div>
         </div>
-        <EstateTable>
+        {/* <EstateTable>
           <EstateCard />
           <EstateCard />
           <EstateCard />
@@ -42,7 +42,7 @@ export default function Estate() {
           <EstateCard />
           <EstateCard />
           <EstateCard />
-        </EstateTable>
+        </EstateTable> */}
       </div>
     </div>
   );

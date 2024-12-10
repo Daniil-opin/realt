@@ -3,8 +3,14 @@
 import Image from "next/image";
 import { useState } from "react";
 import ImageModal from "../../modal/image";
+import { EstateImageRead } from "@/app/lib/definitions";
+import { getProcessedSrc } from "@/app/lib/utils";
 
-export default function EstatePhotos() {
+export default function EstatePhotos({
+  images,
+}: {
+  images: EstateImageRead[];
+}) {
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [selectedImage, setSelectedImage] = useState<{
     src: string;
@@ -27,45 +33,26 @@ export default function EstatePhotos() {
           className="relative col-start-1 col-end-4 row-start-1 row-end-4 aspect-square"
         >
           <Image
-            src={"/images/img2.png"}
+            src={getProcessedSrc(images[0].image_url)}
             layout="fill"
             alt="Картинка"
             className="cursor-pointer rounded-2xl object-cover object-center md:rounded-[20px]"
           />
         </div>
-        <div
-          onClick={() => openModal("/images/img2.png", "Основная картинка")}
-          className="relative aspect-square"
-        >
-          <Image
-            src={"/images/img2.png"}
-            layout="fill"
-            alt="Картинка"
-            className="cursor-pointer rounded-2xl object-cover object-center md:rounded-[20px]"
-          />
-        </div>
-        <div
-          onClick={() => openModal("/images/img2.png", "Основная картинка")}
-          className="relative aspect-square"
-        >
-          <Image
-            src={"/images/img2.png"}
-            layout="fill"
-            alt="Картинка"
-            className="cursor-pointer rounded-2xl object-cover object-center md:rounded-[20px]"
-          />
-        </div>
-        <div
-          onClick={() => openModal("/images/img2.png", "Основная картинка")}
-          className="relative aspect-square"
-        >
-          <Image
-            src={"/images/img2.png"}
-            layout="fill"
-            alt="Картинка"
-            className="cursor-pointer rounded-2xl object-cover object-center md:rounded-[20px]"
-          />
-        </div>
+        {images.slice(1, -1).map(({ id, image_url }) => (
+          <div
+            key={id}
+            onClick={() => openModal("/images/img2.png", "Основная картинка")}
+            className="relative aspect-square"
+          >
+            <Image
+              src={getProcessedSrc(image_url)}
+              layout="fill"
+              alt="Картинка"
+              className="cursor-pointer rounded-2xl object-cover object-center md:rounded-[20px]"
+            />
+          </div>
+        ))}
       </div>
       {selectedImage && (
         <ImageModal

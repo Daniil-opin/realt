@@ -10,10 +10,14 @@ export function InputCheckbox({
   className = "text-sm",
   width = 20,
   height = 20,
+  checked,
+  onChange = () => {},
 }: InputProps & {
   className?: string;
   width?: number;
   height?: number;
+  checked?: boolean;
+  onChange?: () => void;
 }) {
   return (
     <div className="flex cursor-pointer items-center" style={{ width, height }}>
@@ -22,6 +26,8 @@ export function InputCheckbox({
           id={id}
           type="checkbox"
           className="peer sr-only absolute h-0 w-0 opacity-0"
+          checked={checked}
+          onChange={onChange}
           {...register}
         />
         <span
