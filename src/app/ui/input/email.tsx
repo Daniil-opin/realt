@@ -1,3 +1,4 @@
+// components/input/email.tsx
 "use client";
 
 import { InputProps } from "@/app/lib/definitions";
@@ -9,6 +10,7 @@ export function InputEmail({
   label,
   register,
   error,
+  ...rest
 }: InputProps) {
   return (
     <BaseInput
@@ -16,7 +18,8 @@ export function InputEmail({
       label={label}
       placeholder={placeholder}
       type="email"
-      {...register}
+      {...register} // Распространяет value, onChange, name и другие пропсы
+      {...rest}
       error={error}
     />
   );

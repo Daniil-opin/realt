@@ -1,9 +1,8 @@
-// components/edit/EditEstatePage.tsx
-
+// pages/edit-estate.tsx
 "use client";
 
 import { useState, useEffect } from "react";
-import { useForm, SubmitHandler } from "react-hook-form";
+import { useForm, Controller, SubmitHandler } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import {
@@ -11,12 +10,7 @@ import {
   ChevronDownIcon,
   XMarkIcon,
 } from "@heroicons/react/24/outline";
-import { InputText } from "../input/text";
-import { InputNumber } from "../input/number";
-import InputTextarea from "../input/textarea";
 import Image from "next/image";
-import dynamic from "next/dynamic";
-import { InputFileImage } from "../input/file";
 import { convertFileToBase64, getProcessedSrc } from "@/app/lib/utils";
 import {
   EstateRead,
@@ -29,7 +23,14 @@ import {
 } from "@/app/lib/definitions";
 import { getEstateById, updateEstate } from "@/app/seed/route";
 import { useParams, useRouter } from "next/navigation";
+import { InputFileImage } from "../input/file";
+import { InputText } from "../input/text";
+import CustomSelect from "../input/select";
 import { InputCheckbox } from "../input/consent";
+import { InputNumber } from "../input/number";
+import InputTextarea from "../input/textarea";
+import YandexMap from "../map/yandex";
+import { DevTool } from "@hookform/devtools"; // Для отладки
 
 interface SelectOption {
   value: string;
@@ -45,12 +46,7 @@ interface SelectionCategoryProps {
   onSelect: (value: string) => void;
 }
 
-const YandexMap = dynamic(() => import("../map/yandex"), {
-  ssr: false,
-  loading: () => <p>Загрузка карты...</p>,
-});
-
-// Задание схемы валидации с помощью Zod
+// Обновлённая схема Zod с обязательным полем amenities
 const schema = z.object({
   deal_type: z.enum([DealType.Buy, DealType.Rent]),
   property_type: z.enum([PropertyType.Residential, PropertyType.Commercial]),
@@ -65,54 +61,47 @@ const schema = z.object({
   latitude: z.number().min(-90).max(90),
   longitude: z.number().min(-180).max(180),
   description: z.string().optional(),
-  address: z
-    .object({
-      region: z.string().optional(),
-      district: z.string().optional(),
-      locality_type: z
-        .enum([LocalityType.Village, LocalityType.Town, LocalityType.Agrotown])
-        .optional(),
-      locality: z.string().optional(),
-      street_type: z
-        .enum([
-          StreetType.Street,
-          StreetType.Avenue,
-          StreetType.Alley,
-          StreetType.Boulevard,
-        ])
-        .optional(),
-      street: z.string().optional(),
-      house: z.string().optional(),
-      floor: z.string().optional(),
-      corpus: z.string().optional(),
-    })
-    .optional(),
-  amenities: z
-    .object({
-      internet: z.boolean().optional(),
-      elevator: z.boolean().optional(),
-      conditioner: z.boolean().optional(),
-      heating: z.boolean().optional(),
-      parking: z.boolean().optional(),
-      furniture: z.boolean().optional(),
-      watersupply: z.boolean().optional(),
-    })
-    .optional(),
-  characteristics: z
-    .object({
-      rooms: z.number().int().optional(),
-      total_area: z.number().optional(),
-      living_area: z.number().optional(),
-      year: z.number().int().optional(),
-      period: z.enum([Period.Long, Period.Short]).optional(),
-      price: z.number().optional(),
-      payment: z.boolean().optional(),
-    })
-    .optional(),
+  address: z.object({
+    region: z.string().optional(),
+    district: z.string().optional(),
+    locality_type: z
+      .enum([LocalityType.Village, LocalityType.Town, LocalityType.Agrotown])
+      .optional(),
+    locality: z.string().optional(),
+    street_type: z
+      .enum([
+        StreetType.Street,
+        StreetType.Avenue,
+        StreetType.Alley,
+        StreetType.Boulevard,
+      ])
+      .optional(),
+    street: z.string().optional(),
+    house: z.string().optional(),
+    floor: z.string().optional(),
+    corpus: z.string().optional(),
+  }),
+  amenities: z.object({
+    internet: z.boolean().optional(),
+    elevator: z.boolean().optional(),
+    conditioner: z.boolean().optional(),
+    heating: z.boolean().optional(),
+    parking: z.boolean().optional(),
+    furniture: z.boolean().optional(),
+    watersupply: z.boolean().optional(),
+  }),
+  characteristics: z.object({
+    rooms: z.number().int().optional(),
+    total_area: z.number().optional(),
+    living_area: z.number().optional(),
+    year: z.number().int().optional(),
+    period: z.enum([Period.Long, Period.Short]).optional(),
+    price: z.number().optional(),
+    payment: z.boolean().optional(),
+  }),
   images: z.array(z.string()).max(4, "Максимум 4 фото"),
 });
 
-// Тип данных формы
 type FormData = z.infer<typeof schema>;
 
 const SelectionCategory: React.FC<SelectionCategoryProps> = ({
@@ -153,48 +142,6 @@ const SelectionCategory: React.FC<SelectionCategoryProps> = ({
   );
 };
 
-// Компонент CustomSelect для интеграции с react-hook-form
-interface CustomSelectProps {
-  id: string;
-  options: SelectOption[];
-  placeholder?: string;
-  className?: string;
-  register: any;
-  error?: string;
-}
-
-const CustomSelect: React.FC<CustomSelectProps> = ({
-  id,
-  options,
-  placeholder,
-  className = "",
-  register,
-  error,
-}) => {
-  return (
-    <div className={`relative ${className}`}>
-      <select
-        id={id}
-        {...register(id)}
-        className="block min-h-full w-full min-w-20 appearance-none rounded-lg border border-smooth bg-white px-4 py-2 text-sm leading-none text-black focus:border-blue focus:outline-none"
-      >
-        {placeholder && (
-          <option value="" disabled>
-            {placeholder}
-          </option>
-        )}
-        {options.map((option) => (
-          <option key={option.value} value={option.value}>
-            {option.label}
-          </option>
-        ))}
-      </select>
-      <ChevronDownIcon className="pointer-events-none absolute right-3 top-1/2 h-5 w-5 -translate-y-1/2 text-black" />
-      {error && <p className="text-sm text-red-500">{error}</p>}
-    </div>
-  );
-};
-
 export default function EditEstatePage() {
   const params = useParams();
   const router = useRouter();
@@ -212,6 +159,7 @@ export default function EditEstatePage() {
     reset,
     watch,
     formState: { errors },
+    control,
   } = useForm<FormData>({
     resolver: zodResolver(schema),
     defaultValues: {
@@ -254,7 +202,7 @@ export default function EditEstatePage() {
     },
   });
 
-  // Получение значений для отслеживания
+  // Watchers
   const watchPropertyType = watch("property_type", PropertyType.Residential);
   const watchDealType = watch("deal_type", DealType.Buy);
 
@@ -342,7 +290,6 @@ export default function EditEstatePage() {
     },
   ];
 
-  // Загрузка данных о недвижимости при монтировании компонента
   useEffect(() => {
     const fetchEstate = async () => {
       try {
@@ -353,7 +300,7 @@ export default function EditEstatePage() {
           return;
         }
         const data: EstateRead = await getEstateById(estateId);
-        // Преобразование существующих изображений
+        console.log(data);
         const existingImages = data.images.map((img) =>
           getProcessedSrc(img.image_url),
         );
@@ -408,78 +355,58 @@ export default function EditEstatePage() {
     }
   }, [estateId, reset, router]);
 
-  // Обработка изменений координат на карте
+  // Отслеживание текущих значений чекбоксов и характеристик
+  const amenities = watch("amenities");
+  const characteristics = watch("characteristics");
+
   const handleCoordinatesChange = (coords: [number, number]) => {
     setValue("latitude", coords[0]);
     setValue("longitude", coords[1]);
   };
 
-  // Обработка добавления новых фотографий
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files) return;
 
-    const currentTotalImages = loadedImages.length + newImages.length;
+    const currentImages = watch("images");
+    const remainingSlots = 4 - currentImages.length;
 
-    const newImagesArray: { file: File; base64: string }[] = [];
+    const filesArray = Array.from(files).slice(0, remainingSlots);
 
-    for (let i = 0; i < files.length; i++) {
-      const file = files[i];
-      if (currentTotalImages + newImagesArray.length >= 4) {
-        alert("Максимум 4 фотографии.");
-        break;
-      }
-      if (file.size > 10 * 1024 * 1024) {
-        alert(`Файл ${file.name} превышает 10 МБ.`);
-        continue;
-      }
-      try {
-        const base64 = await convertFileToBase64(file);
-        newImagesArray.push({ file, base64 });
-      } catch (error) {
-        console.error("Ошибка при конвертации файла:", error);
-      }
+    const base64Promises = filesArray.map((file) => convertFileToBase64(file));
+
+    try {
+      const base64Images = await Promise.all(base64Promises);
+      const updatedImages = [...currentImages, ...base64Images];
+      setValue("images", updatedImages);
+      setNewImages((prev) => [
+        ...prev,
+        ...filesArray.map((file, idx) => ({ file, base64: base64Images[idx] })),
+      ]);
+    } catch (error) {
+      console.error("Ошибка при загрузке файлов:", error);
     }
-
-    setNewImages((prev) => [...prev, ...newImagesArray]);
-    const allImages = [
-      ...loadedImages,
-      ...newImagesArray.map((img) => img.base64),
-    ];
-    setValue("images", allImages);
   };
 
-  // Обработка удаления фотографий
-  const handleRemoveImage = (index: number, isNew: boolean) => {
-    if (isNew) {
-      const updatedNewImages = [...newImages];
-      updatedNewImages.splice(index, 1);
-      setNewImages(updatedNewImages);
-      const allImages = [
-        ...loadedImages,
-        ...updatedNewImages.map((img) => img.base64),
-      ];
-      setValue("images", allImages);
+  // Обработка удаления изображений
+  const handleRemoveImage = (index: number) => {
+    const currentImages = watch("images");
+    const updatedImages = currentImages.filter((_, i) => i !== index);
+    setValue("images", updatedImages);
+
+    // Обновление состояний loadedImages и newImages при необходимости
+    if (index < loadedImages.length) {
+      setLoadedImages(loadedImages.filter((_, i) => i !== index));
     } else {
-      if (loadedImages.length + newImages.length <= 2) {
-        alert("Минимум 2 фотографии.");
-        return;
-      }
-      const updatedLoadedImages = [...loadedImages];
-      updatedLoadedImages.splice(index, 1);
-      setLoadedImages(updatedLoadedImages);
-      const allImages = [
-        ...updatedLoadedImages,
-        ...newImages.map((img) => img.base64),
-      ];
-      setValue("images", allImages);
+      const newIndex = index - loadedImages.length;
+      setNewImages(newImages.filter((_, i) => i !== newIndex));
     }
   };
 
   // Обработка отправки формы
   const onSubmit: SubmitHandler<FormData> = async (data) => {
     // Проверка количества фотографий
-    const totalImages = loadedImages.length + newImages.length;
+    const totalImages = data.images.length;
     if (totalImages < 2) {
       alert("Минимум 2 фотографии.");
       return;
@@ -533,8 +460,17 @@ export default function EditEstatePage() {
     router.back();
   };
 
+  // Отладка: Отслеживание изменений в форме
+  useEffect(() => {
+    const subscription = watch((value) => {
+      console.log("Текущие значения формы:", value);
+    });
+    return () => subscription.unsubscribe();
+  }, [watch]);
+
   return (
     <>
+      <DevTool control={control} /> {/* Для отладки */}
       <h2 className="my-12 text-3xl font-semibold text-black">
         Редактировать объявление
       </h2>
@@ -616,62 +552,49 @@ export default function EditEstatePage() {
           onSubmit={handleSubmit(onSubmit)}
         >
           {/* Фотографии */}
-          <div className="space-y-5">
-            <h2 className="text-lg font-semibold">Фото</h2>
-            <div className="mb-4 flex flex-wrap gap-4">
-              {/* Существующие изображения */}
-              {loadedImages.map((img, index) => (
-                <div key={`loaded-${index}`} className="relative">
-                  <Image
-                    src={img}
-                    alt={`Фото ${index + 1}`}
-                    width={100}
-                    height={100}
-                    className="h-24 w-24 rounded object-cover"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => handleRemoveImage(index, false)}
-                    className="absolute right-0 top-0 flex h-full w-full items-center justify-center rounded bg-transparent p-1 text-transparent transition-all duration-200 hover:bg-black/60 hover:text-white"
-                  >
-                    <XMarkIcon className="h-10 w-10" />
-                  </button>
+          <Controller
+            control={control}
+            name="images"
+            render={({ field }) => (
+              <div className="space-y-5">
+                <h2 className="text-lg font-semibold">Фото</h2>
+                <div className="mb-4 flex flex-wrap gap-4">
+                  {/* Отображение всех изображений */}
+                  {field.value.map((img, index) => (
+                    <div key={`image-${index}`} className="relative">
+                      <Image
+                        src={img}
+                        alt={`Фото ${index + 1}`}
+                        width={100}
+                        height={100}
+                        className="h-24 w-24 rounded object-cover"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveImage(index)}
+                        className="absolute right-0 top-0 flex h-full w-full items-center justify-center rounded bg-transparent p-1 text-transparent transition-all duration-200 hover:bg-black/60 hover:text-white"
+                      >
+                        <XMarkIcon className="h-10 w-10" />
+                      </button>
+                    </div>
+                  ))}
                 </div>
-              ))}
-              {/* Новые изображения */}
-              {newImages.map((img, index) => (
-                <div key={`new-${index}`} className="relative">
-                  <Image
-                    src={img.base64}
-                    alt={`Новое фото ${index + 1}`}
-                    width={100}
-                    height={100}
-                    className="h-24 w-24 rounded object-cover"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => handleRemoveImage(index, true)}
-                    className="absolute right-0 top-0 flex h-full w-full items-center justify-center rounded bg-transparent p-1 text-transparent transition-all duration-200 hover:bg-black/60 hover:text-white"
-                  >
-                    <XMarkIcon className="h-10 w-10" />
-                  </button>
-                </div>
-              ))}
-            </div>
-            {/* Загрузка новых фотографий */}
-            <div>
-              <InputFileImage
-                multiple={true}
-                id="images"
-                label=""
-                onChange={handleFileChange}
-                disabled={loadedImages.length + newImages.length >= 4}
-              />
-              {errors.images && (
-                <p className="text-sm text-red-500">{errors.images.message}</p>
-              )}
-            </div>
-          </div>
+                {/* Загрузка новых фотографий */}
+                <InputFileImage
+                  multiple={true}
+                  id="images"
+                  label=""
+                  onChange={handleFileChange}
+                  disabled={field.value.length >= 4}
+                />
+                {errors.images && (
+                  <p className="text-sm text-red-500">
+                    {errors.images.message}
+                  </p>
+                )}
+              </div>
+            )}
+          />
 
           {/* Расположение */}
           <div className="space-y-5">
@@ -682,19 +605,21 @@ export default function EditEstatePage() {
               label=""
               placeholder="Область"
               {...register("address.region")}
+              error={errors.address?.region?.message}
             />
             <InputText
               id="address.district"
               label=""
               placeholder="Район"
               {...register("address.district")}
+              error={errors.address?.district?.message}
             />
             <div className="flex space-x-2">
               <CustomSelect
                 id="address.locality_type"
                 options={localityOptions}
                 placeholder="Тип населенного пункта"
-                register={register}
+                {...register("address.locality_type")}
                 error={errors.address?.locality_type?.message}
               />
               <InputText
@@ -702,6 +627,7 @@ export default function EditEstatePage() {
                 label=""
                 placeholder="Населённый пункт"
                 {...register("address.locality")}
+                error={errors.address?.locality?.message}
               />
             </div>
             <div className="flex space-x-2">
@@ -709,7 +635,7 @@ export default function EditEstatePage() {
                 id="address.street_type"
                 options={streetOptions}
                 placeholder="Тип улицы"
-                register={register}
+                {...register("address.street_type")}
                 error={errors.address?.street_type?.message}
               />
               <InputText
@@ -717,6 +643,7 @@ export default function EditEstatePage() {
                 label=""
                 placeholder="Улица"
                 {...register("address.street")}
+                error={errors.address?.street?.message}
               />
             </div>
             <InputText
@@ -724,18 +651,21 @@ export default function EditEstatePage() {
               label=""
               placeholder="Дом"
               {...register("address.house")}
+              error={errors.address?.house?.message}
             />
             <InputText
               id="address.floor"
               label=""
               placeholder="Этаж"
               {...register("address.floor")}
+              error={errors.address?.floor?.message}
             />
             <InputText
               id="address.corpus"
               label=""
               placeholder="Корпус"
               {...register("address.corpus")}
+              error={errors.address?.corpus?.message}
             />
           </div>
 
@@ -747,119 +677,207 @@ export default function EditEstatePage() {
                 <h3 className="text-base font-semibold">Удобства</h3>
                 <div className="space-y-4">
                   <InputCheckbox
-                    width={24}
-                    height={24}
-                    className="text-sm"
                     id="amenities.internet"
                     label="Интернет"
-                    {...register("amenities.internet")}
+                    checked={amenities.internet || false}
+                    onChange={(e) =>
+                      setValue("amenities.internet", e.target.checked)
+                    }
+                    error={errors.amenities?.internet?.message}
                   />
                   <InputCheckbox
-                    width={24}
-                    height={24}
-                    className="text-sm"
                     id="amenities.elevator"
                     label="Лифт"
-                    {...register("amenities.elevator")}
+                    checked={amenities.elevator || false}
+                    onChange={(e) =>
+                      setValue("amenities.elevator", e.target.checked)
+                    }
+                    error={errors.amenities?.elevator?.message}
                   />
                   <InputCheckbox
-                    width={24}
-                    height={24}
-                    className="text-sm"
                     id="amenities.conditioner"
                     label="Кондиционер"
-                    {...register("amenities.conditioner")}
+                    checked={amenities.conditioner || false}
+                    onChange={(e) =>
+                      setValue("amenities.conditioner", e.target.checked)
+                    }
+                    error={errors.amenities?.conditioner?.message}
                   />
                   <InputCheckbox
-                    width={24}
-                    height={24}
-                    className="text-sm"
                     id="amenities.heating"
                     label="Отопление"
-                    {...register("amenities.heating")}
+                    checked={amenities.heating || false}
+                    onChange={(e) =>
+                      setValue("amenities.heating", e.target.checked)
+                    }
+                    error={errors.amenities?.heating?.message}
                   />
                   <InputCheckbox
-                    width={24}
-                    height={24}
-                    className="text-sm"
                     id="amenities.parking"
                     label="Парковка"
-                    {...register("amenities.parking")}
+                    checked={amenities.parking || false}
+                    onChange={(e) =>
+                      setValue("amenities.parking", e.target.checked)
+                    }
+                    error={errors.amenities?.parking?.message}
                   />
                   <InputCheckbox
-                    width={24}
-                    height={24}
-                    className="text-sm"
                     id="amenities.furniture"
                     label="Мебель"
-                    {...register("amenities.furniture")}
+                    checked={amenities.furniture || false}
+                    onChange={(e) =>
+                      setValue("amenities.furniture", e.target.checked)
+                    }
+                    error={errors.amenities?.furniture?.message}
                   />
                   <InputCheckbox
-                    width={24}
-                    height={24}
-                    className="text-sm"
                     id="amenities.watersupply"
                     label="Водоснабжение"
-                    {...register("amenities.watersupply")}
+                    checked={amenities.watersupply || false}
+                    onChange={(e) =>
+                      setValue("amenities.watersupply", e.target.checked)
+                    }
+                    error={errors.amenities?.watersupply?.message}
                   />
                 </div>
               </>
             )}
             <h3 className="text-base font-semibold">Характеристики</h3>
             <div className="space-y-4">
-              <InputNumber
-                id="characteristics.rooms"
-                label=""
-                placeholder="Количество комнат"
-                {...register("characteristics.rooms", { valueAsNumber: true })}
+              {/* Используем Controller для InputNumber */}
+              <Controller
+                control={control}
+                name="characteristics.rooms"
+                render={({ field }) => (
+                  <InputNumber
+                    id="characteristics.rooms"
+                    label="Количество комнат"
+                    placeholder="Введите количество комнат"
+                    value={field.value !== undefined ? String(field.value) : ""}
+                    onChange={(value: string) => {
+                      const numberValue = Number(value);
+                      if (!isNaN(numberValue)) {
+                        field.onChange(numberValue);
+                      }
+                    }}
+                    error={errors.characteristics?.rooms?.message}
+                    allowDecimal={false}
+                  />
+                )}
               />
-              <InputNumber
-                allowDecimal={true}
-                id="characteristics.total_area"
-                label=""
-                placeholder="Общая площадь"
-                {...register("characteristics.total_area", {
-                  valueAsNumber: true,
-                })}
+
+              <Controller
+                control={control}
+                name="characteristics.total_area"
+                render={({ field }) => (
+                  <InputNumber
+                    id="characteristics.total_area"
+                    label="Общая площадь"
+                    placeholder="Введите общую площадь"
+                    value={field.value !== undefined ? String(field.value) : ""}
+                    onChange={(value: string) => {
+                      const numberValue = Number(value);
+                      if (!isNaN(numberValue)) {
+                        field.onChange(numberValue);
+                      }
+                    }}
+                    error={errors.characteristics?.total_area?.message}
+                    allowDecimal={true}
+                  />
+                )}
               />
-              <InputNumber
-                allowDecimal={true}
-                id="characteristics.living_area"
-                label=""
-                placeholder="Жилая площадь"
-                {...register("characteristics.living_area", {
-                  valueAsNumber: true,
-                })}
+
+              <Controller
+                control={control}
+                name="characteristics.living_area"
+                render={({ field }) => (
+                  <InputNumber
+                    id="characteristics.living_area"
+                    label="Жилая площадь"
+                    placeholder="Введите жилую площадь"
+                    value={field.value !== undefined ? String(field.value) : ""}
+                    onChange={(value: string) => {
+                      const numberValue = Number(value);
+                      if (!isNaN(numberValue)) {
+                        field.onChange(numberValue);
+                      }
+                    }}
+                    error={errors.characteristics?.living_area?.message}
+                    allowDecimal={true}
+                  />
+                )}
               />
-              <InputNumber
-                id="characteristics.year"
-                label=""
-                placeholder="Год"
-                {...register("characteristics.year", { valueAsNumber: true })}
+
+              <Controller
+                control={control}
+                name="characteristics.year"
+                render={({ field }) => (
+                  <InputNumber
+                    id="characteristics.year"
+                    label="Год"
+                    placeholder="Введите год"
+                    value={field.value !== undefined ? String(field.value) : ""}
+                    onChange={(value: string) => {
+                      const numberValue = Number(value);
+                      if (!isNaN(numberValue)) {
+                        field.onChange(numberValue);
+                      }
+                    }}
+                    error={errors.characteristics?.year?.message}
+                    allowDecimal={false}
+                  />
+                )}
               />
-              <CustomSelect
-                id="characteristics.period"
-                options={periodOptions}
-                placeholder="Период"
-                register={register}
-                error={errors.characteristics?.period?.message}
+
+              <Controller
+                control={control}
+                name="characteristics.period"
+                render={({ field }) => (
+                  <CustomSelect
+                    id="characteristics.period"
+                    options={periodOptions}
+                    placeholder="Период"
+                    value={field.value}
+                    onChange={(value) => field.onChange(value)}
+                    error={errors.characteristics?.period?.message}
+                  />
+                )}
               />
-              <InputNumber
-                id="characteristics.price"
-                label=""
-                placeholder={
-                  watchDealType === DealType.Buy
-                    ? "Введите стоимость"
-                    : "Введите стоимость за месяц"
-                }
-                {...register("characteristics.price", { valueAsNumber: true })}
+
+              <Controller
+                control={control}
+                name="characteristics.price"
+                render={({ field }) => (
+                  <InputNumber
+                    id="characteristics.price"
+                    label="Цена"
+                    placeholder={
+                      watchDealType === DealType.Buy
+                        ? "Введите стоимость"
+                        : "Введите стоимость за месяц"
+                    }
+                    value={field.value !== undefined ? String(field.value) : ""}
+                    onChange={(value: string) => {
+                      const numberValue = Number(value);
+                      if (!isNaN(numberValue)) {
+                        field.onChange(numberValue);
+                      }
+                    }}
+                    error={errors.characteristics?.price?.message}
+                    allowDecimal={true}
+                  />
+                )}
               />
+
               {watchDealType === DealType.Rent && (
                 <InputCheckbox
-                  className="text-sm"
                   id="characteristics.payment"
                   label="Предоплата"
-                  {...register("characteristics.payment")}
+                  checked={characteristics.payment || false}
+                  onChange={(e) =>
+                    setValue("characteristics.payment", e.target.checked)
+                  }
+                  error={errors.characteristics?.payment?.message}
                 />
               )}
             </div>
@@ -869,10 +887,11 @@ export default function EditEstatePage() {
           <div className="space-y-5">
             <h2 className="text-lg font-semibold">Описание</h2>
             <InputTextarea
+              id="description"
               label=""
               placeholder="Краткое описание привлекает больше внимания."
-              id="description"
               {...register("description")}
+              error={errors.description?.message}
             />
           </div>
 

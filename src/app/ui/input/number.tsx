@@ -1,11 +1,16 @@
-// components/InputNumber.tsx
+// components/input/number.tsx
 "use client";
 
-import { useRef } from "react";
-import { InputProps } from "@/app/lib/definitions";
-import BaseInput from "./base";
+import React from "react";
+import clsx from "clsx";
 
-export interface ExtendedInputProps extends InputProps {
+interface InputNumberProps {
+  id: string;
+  label?: string;
+  placeholder?: string;
+  value: string;
+  onChange: (value: string) => void;
+  error?: string;
   allowDecimal?: boolean;
 }
 
@@ -13,12 +18,12 @@ export function InputNumber({
   id,
   placeholder,
   label,
-  register,
+  value,
+  onChange,
   error,
   allowDecimal = false,
-}: ExtendedInputProps) {
-  const inputRef = useRef<HTMLInputElement | null>(null);
-
+  ...rest
+}: InputNumberProps) {
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     const forbiddenKeys = ["e", "E", "+", "-"];
 
@@ -27,8 +32,7 @@ export function InputNumber({
     }
 
     if (allowDecimal && e.key === ".") {
-      const currentValue = e.currentTarget.value;
-      if (currentValue.includes(".")) {
+      if (value.includes(".")) {
         e.preventDefault();
       }
     }
@@ -46,44 +50,57 @@ export function InputNumber({
     if (decimalPattern.test(pasteData)) {
       e.preventDefault();
     } else if (allowDecimal) {
-      const input = e.currentTarget;
-      const currentValue = input.value;
-      const pastedValue = pasteData;
-
-      if (currentValue.includes(".") && pastedValue.includes(".")) {
+      if (value.includes(".") && pasteData.includes(".")) {
         e.preventDefault();
       }
     }
   };
 
-  const handleInput = (e: React.ChangeEvent<HTMLInputElement>) => {
-    let pattern: RegExp;
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    let inputValue = e.target.value;
 
-    if (allowDecimal) {
-      pattern = /[^0-9.]/g;
-      const parts = e.target.value.split(".");
-      if (parts.length > 2) {
-        e.target.value = parts[0] + "." + parts.slice(1).join("");
-      }
+    // Разрешить только цифры и одну точку, если разрешено
+    let newValue = inputValue.replace(/[^0-9.]/g, "");
+    if (!allowDecimal) {
+      newValue = newValue.replace(".", "");
     } else {
-      pattern = /[^0-9]/g;
+      const parts = newValue.split(".");
+      if (parts.length > 2) {
+        newValue = parts[0] + "." + parts.slice(1).join("");
+      }
     }
 
-    e.target.value = e.target.value.replace(pattern, "");
+    onChange(newValue);
   };
 
   return (
-    <BaseInput
-      id={id}
-      label={label}
-      placeholder={placeholder}
-      type="text"
-      error={error}
-      {...register}
-      onKeyDown={handleKeyDown}
-      onPaste={handlePaste}
-      onInput={handleInput}
-      ref={inputRef}
-    />
+    <div className="flex w-full flex-col items-start justify-start">
+      {label && (
+        <label
+          htmlFor={id}
+          className="mb-1 block text-sm font-medium text-black"
+        >
+          {label}
+        </label>
+      )}
+      <input
+        id={id}
+        className={clsx(
+          "w-full rounded-lg border px-4 py-4 text-sm placeholder:text-sm placeholder:text-greyblue focus:border-blue focus:outline-none",
+          {
+            "border-red-500": error,
+            "border-smooth": !error,
+          },
+        )}
+        placeholder={placeholder}
+        type="text"
+        value={value}
+        onChange={handleChange}
+        onKeyDown={handleKeyDown}
+        onPaste={handlePaste}
+        {...rest}
+      />
+      {error && <p className="mt-1 text-xs text-red-500">{error}</p>}
+    </div>
   );
 }

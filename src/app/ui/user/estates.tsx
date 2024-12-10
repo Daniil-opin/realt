@@ -17,10 +17,16 @@ export default function UserEstates() {
   const fetchEstates = async (filters: FilterParams) => {
     const token = localStorage.getItem("token");
     if (!token) return;
-    const data = await getUserOwnEstates(token);
-    setUserEstates(data);
 
-    setSearchQuery(filters.search_query || "");
+    console.log("Fetching estates with filters:", filters);
+
+    try {
+      const data = await getUserOwnEstates(token, filters);
+      setUserEstates(data);
+      setSearchQuery(filters.search_query || "");
+    } catch (error) {
+      console.error("Ошибка при загрузке недвижимости:", error);
+    }
   };
 
   useEffect(() => {
@@ -42,7 +48,7 @@ export default function UserEstates() {
       };
       fetchEstates(initialFilters);
     }
-  }, []);
+  }, [searchParams]);
 
   const handleFilterChange = (filters: FilterParams) => {
     fetchEstates(filters);

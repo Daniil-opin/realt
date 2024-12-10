@@ -1,6 +1,7 @@
+// components/input/base.tsx
 "use client";
 
-import { InputHTMLAttributes, forwardRef } from "react";
+import React, { InputHTMLAttributes, forwardRef } from "react";
 import clsx from "clsx";
 
 interface BaseInputProps extends InputHTMLAttributes<HTMLInputElement> {
@@ -32,7 +33,7 @@ const BaseInput = forwardRef<HTMLInputElement, BaseInputProps>(
             className,
           )}
           ref={ref}
-          {...props}
+          {...props} // Распространяет value, onChange, name и другие пропсы
         />
         {error && <p className="mt-1 text-xs text-red-500">{error}</p>}
       </div>

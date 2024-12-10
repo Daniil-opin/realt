@@ -1,3 +1,4 @@
+// components/input/text.tsx
 "use client";
 
 import { InputProps } from "@/app/lib/definitions";
@@ -9,6 +10,7 @@ export function InputText({
   label,
   register,
   error,
+  ...rest
 }: InputProps) {
   return (
     <BaseInput
@@ -16,8 +18,9 @@ export function InputText({
       label={label}
       placeholder={placeholder}
       type="text"
+      {...register} // Распространяет value, onChange, name и другие пропсы
+      {...rest}
       error={error}
-      {...register}
     />
   );
 }

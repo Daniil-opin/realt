@@ -193,11 +193,17 @@ export const getUserFavorites = async (
 
 export const getUserOwnEstates = async (
   token: string,
+  filters: FilterParams,
 ): Promise<EstateRead[]> => {
   try {
+    const config = {
+      params: filters,
+      ...(token ? getAuthHeader(token) : {}),
+    };
+
     const res = await axios.get<EstateRead[]>(
       `${API_BASE_URL}/users/me/estates`,
-      getAuthHeader(token),
+      config,
     );
     return res.data;
   } catch (error: AxiosError | unknown) {
