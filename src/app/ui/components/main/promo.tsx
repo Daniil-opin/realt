@@ -1,12 +1,6 @@
-"use client";
-
-import { searchCategory } from "@/app/lib/placeholder-data";
 import Image from "next/image";
-import { useState } from "react";
 
 export default function Promo() {
-  const [service, setService] = useState<"rent" | "buy">("rent");
-
   return (
     <div className="relative h-max w-full overflow-hidden">
       <Image
@@ -18,7 +12,7 @@ export default function Promo() {
         priority
         className="absolute z-0 h-auto w-full max-w-full"
       />
-      <div className="relative z-10 space-y-10 py-32 text-white">
+      <div className="relative z-10 space-y-10 py-32 pb-48 text-white">
         <div className="container space-y-10">
           <div className="w-max space-y-6 rounded-[30px] bg-white p-10 text-foreground">
             <h2 className="text-6xl font-bold leading-[1.35]">
@@ -33,10 +27,10 @@ export default function Promo() {
             </p>
           </div>
           <div>
-            <div className="grid w-max grid-cols-2 rounded-t-[20px] bg-white font-semibold text-black">
+            {/* <div className="grid w-max grid-cols-2 rounded-t-[20px] bg-white font-semibold text-black">
               <div
                 onClick={() => setService("rent")}
-                className={`cursor-pointer border-b-2 px-8 py-4 ${
+                className={`cursor-pointer border-b-2 px-8 py-4 font-medium ${
                   service === "rent"
                     ? "border-blue text-blue"
                     : "border-smoothblue"
@@ -46,7 +40,7 @@ export default function Promo() {
               </div>
               <div
                 onClick={() => setService("buy")}
-                className={`cursor-pointer border-b-2 px-8 py-4 ${
+                className={`cursor-pointer border-b-2 px-8 py-4 font-medium ${
                   service === "buy"
                     ? "border-blue text-blue"
                     : "border-smoothblue"
@@ -65,8 +59,8 @@ export default function Promo() {
                       : "px-9"
                   }`}
                 >
-                  <h6 className="text-greyblue">{title}</h6>
-                  <div className="flex items-center justify-start space-x-2 text-lg text-black">
+                  <h6 className="font-medium text-greyblue">{title}</h6>
+                  <div className="flex items-center justify-start space-x-2 text-lg font-medium text-black">
                     <h5>{subtitle}</h5>
                     <Image
                       width={16}
@@ -78,7 +72,7 @@ export default function Promo() {
                 </div>
               ))}
               <button className="rounded-xl bg-blue px-7 py-4">Поиск</button>
-            </div>
+            </div> */}
           </div>
         </div>
       </div>

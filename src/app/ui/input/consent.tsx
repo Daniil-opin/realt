@@ -1,6 +1,7 @@
 "use client";
 
 import { InputProps } from "@/app/lib/definitions";
+import { ChangeEventHandler } from "react";
 
 export function InputCheckbox({
   label,
@@ -17,7 +18,7 @@ export function InputCheckbox({
   width?: number;
   height?: number;
   checked?: boolean;
-  onChange?: () => void;
+  onChange?: ChangeEventHandler<HTMLInputElement>;
 }) {
   return (
     <div className="flex cursor-pointer items-center" style={{ width, height }}>

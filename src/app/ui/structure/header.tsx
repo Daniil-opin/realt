@@ -50,6 +50,18 @@ export default function Header() {
             >
               Аренда
             </button>
+            {isLoading ? (
+              <></>
+            ) : isAuthenticated ? (
+              <button
+                className={`transition duration-200 hover:font-bold ${pathname.split("/").includes("sale") ? "font-bold text-black" : "font-medium"}`}
+                onClick={() => router.push("/sale")}
+              >
+                Продажа
+              </button>
+            ) : (
+              <></>
+            )}
           </nav>
         </div>
 

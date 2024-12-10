@@ -1,6 +1,5 @@
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useState, useContext } from "react";
 import { differenceInDays } from "date-fns";
 import { getProcessedSrc } from "@/app/lib/utils";
 import {
@@ -8,21 +7,33 @@ import {
   LocalityTypeLabels,
   StreetTypeLabels,
 } from "@/app/lib/definitions";
-import { HeartIcon } from "../icons/icons";
-import {
-  checkEstateInFavorites,
-  addEstateToFavorites,
-  removeEstateFromFavorites,
-} from "@/app/seed/route";
-import { AuthContext } from "../context/auth";
+import { PencilSquareIcon } from "@heroicons/react/24/outline";
 
-interface EstateCardProps {
+interface EstateEditCardProps {
   estate: EstateRead;
+  searchQuery?: string; // Передаем строку поиска для подсветки
 }
 
-export default function EstateCard({ estate }: EstateCardProps) {
-  const { isAuthenticated } = useContext(AuthContext);
+function highlightMatch(text: string, query: string) {
+  if (!query) return text;
+  const escapedQuery = query.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const regex = new RegExp(`(${escapedQuery})`, "gi");
+  const parts = text.split(regex);
+  return parts.map((part, i) =>
+    regex.test(part) ? (
+      <span key={i} className="text-sm text-orange-500 underline">
+        {part}
+      </span>
+    ) : (
+      part
+    ),
+  );
+}
 
+export default function EstateEditCard({
+  estate,
+  searchQuery = "",
+}: EstateEditCardProps) {
   const imageUrl =
     estate.images.length > 0
       ? estate.images[0].image_url
@@ -64,55 +75,6 @@ export default function EstateCard({ estate }: EstateCardProps) {
   const daysDiff = differenceInDays(now, createdDate);
   const showNewLabel = daysDiff <= 3;
 
-  const [isFavorite, setIsFavorite] = useState<boolean>(false);
-  const [loadingFavorite, setLoadingFavorite] = useState<boolean>(true);
-
-  useEffect(() => {
-    const token = localStorage.getItem("token");
-    if (token && isAuthenticated) {
-      const checkFavorite = async () => {
-        try {
-          const fav = await checkEstateInFavorites(estate.id, token);
-          setIsFavorite(fav);
-        } catch (error) {
-          console.error("Не удалось проверить избранное:", error);
-        } finally {
-          setLoadingFavorite(false);
-        }
-      };
-      checkFavorite();
-    } else {
-      setLoadingFavorite(false);
-    }
-  }, [estate.id, isAuthenticated]);
-
-  const handleFavoriteClick = async () => {
-    const token = localStorage.getItem("token");
-    if (!token || !isAuthenticated) {
-      // Если пользователь не авторизован, просто ничего не делаем
-      return;
-    }
-    if (loadingFavorite) return;
-
-    try {
-      setLoadingFavorite(true);
-      if (isFavorite) {
-        // Удаляем из избранного
-        await removeEstateFromFavorites(estate.id, token);
-        setIsFavorite(false);
-      } else {
-        // Добавляем в избранное
-        await addEstateToFavorites(estate.id, token);
-        setIsFavorite(true);
-      }
-    } catch (error) {
-      console.error("Ошибка при изменении избранного:", error);
-      alert("Не удалось изменить избранное");
-    } finally {
-      setLoadingFavorite(false);
-    }
-  };
-
   return (
     <div className="relative space-y-6 rounded-[20px] bg-white">
       <div className="relative">
@@ -146,24 +108,16 @@ export default function EstateCard({ estate }: EstateCardProps) {
             </span>
             <span>{priceSuffix}</span>
           </div>
-          {isAuthenticated && (
-            <button
-              onClick={handleFavoriteClick}
-              disabled={loadingFavorite}
-              className="flex items-center justify-center rounded-full p-2 shadow-[0px_0px_4px_0px_rgba(0,0,0,0.05)] focus:outline-none"
-            >
-              <HeartIcon
-                fill={isFavorite ? "#2f6feb" : "none"}
-                color={isFavorite ? "#2f6feb" : "#2f6feb"}
-                className={`transition-transform duration-200 hover:scale-110 ${
-                  loadingFavorite ? "opacity-50" : "opacity-100"
-                }`}
-              />
-            </button>
-          )}
+          <Link
+            href={`/sale/${estate.id}`}
+            className="flex items-center justify-center rounded-full p-2 shadow-[0px_0px_4px_0px_rgba(0,0,0,0.05)]"
+            aria-label="Редактировать"
+          >
+            <PencilSquareIcon className="text-blue-500 hover:text-blue-700 h-5 w-5 transition-transform duration-200 hover:scale-110" />
+          </Link>
         </div>
         <p className="mb-6 text-sm leading-[1.5] text-black/70">
-          {fullAddress}
+          {highlightMatch(fullAddress, searchQuery)}
         </p>
         <Link
           href={`/estates/${estate.id}`}

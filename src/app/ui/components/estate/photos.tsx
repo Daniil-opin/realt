@@ -29,7 +29,7 @@ export default function EstatePhotos({
     <>
       <div className="mb-12 grid w-full grid-cols-3 grid-rows-3 gap-5 md:grid-cols-4 xl:gap-10">
         <div
-          onClick={() => openModal("/images/img2.png", "Основная картинка")}
+          onClick={() => openModal(images[0].image_url, "Основная картинка")}
           className="relative col-start-1 col-end-4 row-start-1 row-end-4 aspect-square"
         >
           <Image
@@ -42,7 +42,7 @@ export default function EstatePhotos({
         {images.slice(1, -1).map(({ id, image_url }) => (
           <div
             key={id}
-            onClick={() => openModal("/images/img2.png", "Основная картинка")}
+            onClick={() => openModal(image_url, "Основная картинка")}
             className="relative aspect-square"
           >
             <Image

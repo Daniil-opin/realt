@@ -1,12 +1,25 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { BuyIconMain, KeyIconMain } from "../../icons/icons";
-import EstateCard from "../../card/estate";
+import { EstateRead } from "@/app/lib/definitions";
+import { getAllEstates } from "@/app/seed/route";
 import EstateTable from "../../table/estate";
+import EstateCard from "../../card/estate";
 
 export default function Estate() {
+  const [estates, setEstates] = useState<EstateRead[]>();
   const [service, setService] = useState<"rent" | "buy">("rent");
+
+  useEffect(() => {
+    const fetchEstates = async () => {
+      const data = await getAllEstates();
+      setEstates(data);
+    };
+
+    fetchEstates();
+  }, [service]);
+
   return (
     <div className="w-full bg-lightblue">
       <div className="container pt-24">
@@ -33,16 +46,12 @@ export default function Estate() {
             <span>Купля</span>
           </div>
         </div>
-        {/* <EstateTable>
-          <EstateCard />
-          <EstateCard />
-          <EstateCard />
-          <EstateCard />
-          <EstateCard />
-          <EstateCard />
-          <EstateCard />
-          <EstateCard />
-        </EstateTable> */}
+        <EstateTable>
+          {estates
+            ?.slice(0, 8)
+            ?.filter((estate) => estate.deal_type === service)
+            .map((estate) => <EstateCard key={estate.id} estate={estate} />)}
+        </EstateTable>
       </div>
     </div>
   );

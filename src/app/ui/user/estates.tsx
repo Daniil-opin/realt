@@ -1,30 +1,65 @@
-import Image from "next/image";
+"use client";
+
 import EstateTable from "../table/estate";
-import EstateCard from "../card/estate";
+import EstateEditCard from "../card/estate-edit";
+import { useEffect, useState } from "react";
+import { getUserOwnEstates } from "@/app/seed/route";
+import { EstateRead } from "@/app/lib/definitions";
+import Processing from "../processing/processing";
+import { FilterParams } from "@/app/seed/route";
+import { useSearchParams } from "next/navigation";
 
 export default function UserEstates() {
+  const [userEstates, setUserEstates] = useState<EstateRead[]>([]);
+  const [searchQuery, setSearchQuery] = useState<string>("");
+  const searchParams = useSearchParams();
+
+  const fetchEstates = async (filters: FilterParams) => {
+    const token = localStorage.getItem("token");
+    if (!token) return;
+    const data = await getUserOwnEstates(token);
+    setUserEstates(data);
+
+    setSearchQuery(filters.search_query || "");
+  };
+
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (token) {
+      const initialFilters: FilterParams = {
+        deal_type: searchParams.get("deal_type") || "buy",
+        property_type: searchParams.get("property_type") || undefined,
+        property_kind: searchParams.get("property_kind") || undefined,
+        min_price: searchParams.get("min_price")
+          ? parseFloat(searchParams.get("min_price") as string)
+          : undefined,
+        max_price: searchParams.get("max_price")
+          ? parseFloat(searchParams.get("max_price") as string)
+          : undefined,
+        area_range: searchParams.get("area_range") || undefined,
+        sort: searchParams.get("sort") || "new",
+        search_query: searchParams.get("search_query") || "",
+      };
+      fetchEstates(initialFilters);
+    }
+  }, []);
+
+  const handleFilterChange = (filters: FilterParams) => {
+    fetchEstates(filters);
+  };
+
   return (
     <>
       <h2 className="mb-5 text-3xl font-semibold">Мои объявления</h2>
-      <div className="mb-12 flex w-full items-stretch justify-between">
-        <div className="relative w-full max-w-[500px]">
-          <Image
-            width={24}
-            height={24}
-            src={"/icons/iconSearch.svg"}
-            alt="Поиск"
-            className="absolute left-5 top-1/2 h-6 w-6 -translate-y-1/2 cursor-pointer"
-          />
-          <input
-            id="search"
-            placeholder="Поиск"
-            type="text"
-            className="min-h-14 w-full rounded-xl border border-smooth bg-transparent bg-white pl-14 pr-5 font-medium leading-none text-black placeholder:text-base placeholder:text-greyblue focus-within:border-blue focus:outline-none"
-          />
-        </div>
-      </div>
+      <Processing onFilterChange={handleFilterChange} />
       <EstateTable>
-        <EstateCard />
+        {userEstates.map((estate) => (
+          <EstateEditCard
+            key={estate.id}
+            estate={estate}
+            searchQuery={searchQuery}
+          />
+        ))}
       </EstateTable>
     </>
   );

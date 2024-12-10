@@ -315,3 +315,57 @@ export const getFilteredEstates = async (
     return handleAxiosError(error, "Не удалось получить список недвижимости");
   }
 };
+
+export const addEstateToFavorites = async (
+  estateId: number,
+  token: string,
+): Promise<{ detail: string }> => {
+  try {
+    const res = await axios.post<{ detail: string }>(
+      `${API_BASE_URL}/users/me/favorites/${estateId}/add`,
+      null,
+      getAuthHeader(token),
+    );
+    return res.data;
+  } catch (error: AxiosError | unknown) {
+    return handleAxiosError(
+      error,
+      "Не удалось добавить недвижимость в избранное",
+    );
+  }
+};
+
+export const removeEstateFromFavorites = async (
+  estateId: number,
+  token: string,
+): Promise<void> => {
+  try {
+    await axios.delete(
+      `${API_BASE_URL}/users/me/favorites/${estateId}`,
+      getAuthHeader(token),
+    );
+  } catch (error: AxiosError | unknown) {
+    return handleAxiosError(
+      error,
+      "Не удалось удалить недвижимость из избранного",
+    );
+  }
+};
+
+export const checkEstateInFavorites = async (
+  estateId: number,
+  token: string,
+): Promise<boolean> => {
+  try {
+    const res = await axios.get<{ is_favorite: boolean }>(
+      `${API_BASE_URL}/users/me/favorites/check/${estateId}`,
+      getAuthHeader(token),
+    );
+    return res.data.is_favorite;
+  } catch (error: AxiosError | unknown) {
+    return handleAxiosError(
+      error,
+      "Не удалось проверить избранное для данной недвижимости",
+    );
+  }
+};

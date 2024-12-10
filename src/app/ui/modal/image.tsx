@@ -1,6 +1,7 @@
 import React from "react";
 import Image from "next/image";
 import { XMarkIcon } from "@heroicons/react/24/outline";
+import { getProcessedSrc } from "@/app/lib/utils";
 
 interface ModalProps {
   isOpen: boolean;
@@ -27,7 +28,7 @@ export default function ImageModal({ isOpen, onClose, src, alt }: ModalProps) {
         />
         <div className="max-h-screen max-w-3xl">
           <Image
-            src={src}
+            src={getProcessedSrc(src)}
             alt={alt}
             width={1200}
             height={800}
