@@ -14,6 +14,7 @@ import {
 } from "@heroicons/react/24/outline";
 import { useDebounce } from "@/app/lib/hooks";
 import { UserRoleLabels } from "@/app/lib/definitions";
+import { toast } from "react-toastify";
 
 export default function AdminUsersTable() {
   const [users, setUsers] = useState<UserReadExtended[]>([]);
@@ -30,7 +31,7 @@ export default function AdminUsersTable() {
           const data = await getAllUsers(token);
           setUsers(data);
         } catch (err) {
-          setError("Не удалось загрузить пользователей");
+          toast.error("Не удалось загрузить пользователей");
           console.error(err);
         } finally {
           setLoading(false);
@@ -50,7 +51,7 @@ export default function AdminUsersTable() {
   ) => {
     const token = localStorage.getItem("token");
     if (!token) {
-      alert("Нет токена аутентификации");
+      toast.warning("Нет токена аутентификации");
       return;
     }
 
@@ -61,11 +62,11 @@ export default function AdminUsersTable() {
           user.id === userId ? { ...user, consent: updatedUser.consent } : user,
         ),
       );
-      alert(
+      toast.success(
         `Пользователь ${updatedUser.consent ? "разблокирован" : "заблокирован"}`,
       );
     } catch (error) {
-      alert("Не удалось обновить статус пользователя");
+      toast.error("Не удалось обновить статус пользователя");
       console.error(error);
     }
   };
@@ -77,16 +78,16 @@ export default function AdminUsersTable() {
 
     const token = localStorage.getItem("token");
     if (!token) {
-      alert("Нет токена аутентификации");
+      toast.warning("Нет токена аутентификации");
       return;
     }
 
     try {
       await deleteUser(userId, token);
       setUsers((prevUsers) => prevUsers.filter((user) => user.id !== userId));
-      alert("Пользователь успешно удален");
+      toast.success("Пользователь успешно удален");
     } catch (error) {
-      alert("Не удалось удалить пользователя");
+      toast.error("Не удалось удалить пользователя");
       console.error(error);
     }
   };

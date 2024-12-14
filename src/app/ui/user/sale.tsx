@@ -21,6 +21,8 @@ import {
   StreetType,
 } from "@/app/lib/definitions";
 import { createEstate } from "@/app/seed/route";
+import { useRouter } from "next/navigation";
+import { toast } from "react-toastify";
 
 interface SelectOption {
   value: string;
@@ -80,6 +82,22 @@ const SelectionCategory: React.FC<SelectionCategoryProps> = ({
 };
 
 export default function UserSale() {
+  const router = useRouter();
+  const [formData, setFormData] = useState({
+    address: {
+      house: "",
+      floor: "",
+      corpus: "",
+    },
+    characteristics: {
+      rooms: "",
+      totalArea: "",
+      livingArea: "",
+      year: "",
+      price: "",
+    },
+  });
+
   const [coordinates, setCoordinates] = useState<[number, number]>([
     53.9025, 27.5615,
   ]);
@@ -195,11 +213,11 @@ export default function UserSale() {
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
       if (images.length + newImages.length >= 4) {
-        alert("Максимум 4 фотографии.");
+        toast.warning("Максимум 4 фотографии.");
         break;
       }
       if (file.size > 10 * 1024 * 1024) {
-        alert(`Файл ${file.name} превышает 10 МБ.`);
+        toast.error(`Файл ${file.name} превышает 10 МБ.`);
         continue;
       }
       try {
@@ -216,9 +234,6 @@ export default function UserSale() {
   const handleRemoveImage = (index: number) => {
     setImages((prev) => prev.filter((_, i) => i !== index));
   };
-
-  // Используем роутер для перенаправления
-  // const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -329,23 +344,23 @@ export default function UserSale() {
       const authToken = localStorage.getItem("token") || undefined;
 
       if (!authToken) {
-        alert("Вы должны войти в систему для создания недвижимости.");
+        toast.warning("Вы должны войти в систему для создания недвижимости.");
         return;
       }
 
-      // Отправляем данные на сервер
-      const createdEstate = await createEstate(formData, authToken);
+      await createEstate(formData, authToken);
 
-      console.log("Созданная недвижимость:", createdEstate);
+      toast.success("Недвижимость создана.");
+      router.push("/");
     } catch (error) {
-      alert(`Ошибка при создании недвижимости: ${error}`);
+      toast.error(`Ошибка при создании недвижимости: ${error}`);
     }
   };
 
   return (
     <>
       <h2 className="my-12 text-3xl font-semibold text-black">
-        Персональная информация
+        Продажа недвижимости
       </h2>
       <div className="mb-24 grid grid-cols-2 gap-x-20">
         <div className="space-y-10">
@@ -464,9 +479,42 @@ export default function UserSale() {
                   />
                   <InputText id="street" label="" placeholder="Название" />
                 </div>
-                <InputNumber id="house" label="" placeholder="Дом" />
-                <InputNumber id="floor" label="" placeholder="Этаж" />
-                <InputNumber id="corpus" label="" placeholder="Корпус" />
+                <InputNumber
+                  id="house"
+                  value={formData.address?.house || ""}
+                  onChange={(newValue) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      address: { ...prev.address, house: newValue },
+                    }))
+                  }
+                  label=""
+                  placeholder="Дом"
+                />
+                <InputNumber
+                  id="floor"
+                  value={formData.address?.floor || ""}
+                  onChange={(newValue) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      address: { ...prev.address, floor: newValue },
+                    }))
+                  }
+                  label=""
+                  placeholder="Этаж"
+                />
+                <InputNumber
+                  id="corpus"
+                  value={formData.address?.corpus || ""}
+                  onChange={(newValue) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      address: { ...prev.address, corpus: newValue },
+                    }))
+                  }
+                  label=""
+                  placeholder="Корпус"
+                />
               </div>
             </div>
           </div>
@@ -554,6 +602,16 @@ export default function UserSale() {
               <div className="space-y-3">
                 <InputNumber
                   id="rooms"
+                  value={formData.characteristics.rooms}
+                  onChange={(value) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      characteristics: {
+                        ...prev.characteristics,
+                        rooms: value,
+                      },
+                    }))
+                  }
                   label=""
                   placeholder="Количество комнат"
                 />
@@ -562,6 +620,16 @@ export default function UserSale() {
                 <InputNumber
                   allowDecimal={true}
                   id="totalArea"
+                  value={formData.characteristics.totalArea}
+                  onChange={(value) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      characteristics: {
+                        ...prev.characteristics,
+                        totalArea: value,
+                      },
+                    }))
+                  }
                   label=""
                   placeholder="Общая площадь"
                 />
@@ -570,13 +638,35 @@ export default function UserSale() {
                 <InputNumber
                   allowDecimal={true}
                   id="livingArea"
+                  value={formData.characteristics.livingArea}
+                  onChange={(value) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      characteristics: {
+                        ...prev.characteristics,
+                        livingArea: value,
+                      },
+                    }))
+                  }
                   label=""
                   placeholder="Жилая площадь"
                 />
               </div>
               <div className="space-y-3">
-                <InputNumber id="year" label="" placeholder="Год" />
+                <InputNumber
+                  id="year"
+                  value={formData.characteristics.year}
+                  onChange={(value) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      characteristics: { ...prev.characteristics, year: value },
+                    }))
+                  }
+                  label=""
+                  placeholder="Год"
+                />
               </div>
+
               <div className="space-y-3">
                 <CustomSelect
                   className="h-[54px]"
@@ -588,6 +678,16 @@ export default function UserSale() {
               <div className="space-y-3">
                 <InputNumber
                   id="price"
+                  value={formData.characteristics.price}
+                  onChange={(value) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      characteristics: {
+                        ...prev.characteristics,
+                        price: value,
+                      },
+                    }))
+                  }
                   label=""
                   placeholder={
                     dealType === "buy"
@@ -645,7 +745,7 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
     <div className={`relative ${className}`}>
       <select
         id={id}
-        className="block min-h-full w-full min-w-20 appearance-none rounded-lg border border-smooth bg-white px-4 py-2 text-sm leading-none text-black focus:border-blue focus:outline-none"
+        className="block min-h-full w-full min-w-24 appearance-none rounded-lg border border-smooth bg-white px-4 py-2 text-sm leading-none text-black focus:border-blue focus:outline-none"
       >
         {!!placeholder && (
           <option value="" disabled>

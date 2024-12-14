@@ -14,6 +14,7 @@ interface CustomSelectProps extends SelectHTMLAttributes<HTMLSelectElement> {
   options: SelectOption[];
   placeholder?: string;
   className?: string;
+  classNameSelect?: string;
   error?: string;
 }
 
@@ -22,6 +23,7 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
   options,
   placeholder,
   className = "",
+  classNameSelect = "",
   error,
   ...rest
 }) => {
@@ -31,7 +33,7 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
         id={id}
         {...rest}
         className={clsx(
-          "block min-h-full w-full min-w-24 appearance-none rounded-lg border px-4 py-2 text-sm leading-none text-black focus:border-blue focus:outline-none",
+          `block min-h-full w-full ${classNameSelect} appearance-none rounded-lg border px-4 py-2 text-sm leading-none text-black focus:border-blue focus:outline-none`,
           {
             "border-red-500": error,
             "border-smooth": !error,

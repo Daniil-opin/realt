@@ -6,9 +6,14 @@ import Link from "next/link";
 import Logo from "../logo/logo";
 import { HeartIcon, UserIcon } from "../icons/icons";
 import Image from "next/image";
-import { Bars3Icon, XMarkIcon } from "@heroicons/react/24/outline";
+import {
+  Bars3Icon,
+  BuildingOffice2Icon,
+  XMarkIcon,
+} from "@heroicons/react/24/outline";
 import { useClickOutsideAndEscape } from "@/app/lib/hooks";
 import { AuthContext } from "../context/auth";
+import { toast } from "react-toastify";
 
 export default function Header() {
   const router = useRouter();
@@ -85,7 +90,10 @@ export default function Header() {
             >
               <ul className="flex flex-col items-center space-y-4">
                 {!isLoading && (
-                  <li>
+                  <li
+                    className="animate-fadeInUp animation-delay-100 opacity-0"
+                    style={{ animationFillMode: "forwards" }}
+                  >
                     <UserIcon
                       onClick={() =>
                         router.push(isAuthenticated ? "/user/profile" : "/auth")
@@ -98,18 +106,11 @@ export default function Header() {
                     />
                   </li>
                 )}
-                <li>
-                  <HeartIcon
-                    width={22}
-                    height={22}
-                    fill={"none"}
-                    className="cursor-pointer transition-transform duration-200 hover:scale-110"
-                    onClick={() => {
-                      router.push("/user/favourites");
-                    }}
-                  />
-                </li>
-                <li>
+
+                <li
+                  className="animate-fadeInUp animation-delay-200 opacity-0"
+                  style={{ animationFillMode: "forwards" }}
+                >
                   <Link href={"tel:+375292417581"}>
                     <Image
                       width={20}
@@ -121,11 +122,46 @@ export default function Header() {
                   </Link>
                 </li>
                 {isAuthenticated && (
-                  <li>
+                  <li
+                    className="animate-fadeInUp animation-delay-300 opacity-0"
+                    style={{ animationFillMode: "forwards" }}
+                  >
+                    <HeartIcon
+                      width={22}
+                      height={22}
+                      fill={"none"}
+                      className="cursor-pointer transition-transform duration-200 hover:scale-110"
+                      onClick={() => {
+                        router.push("/user/favourites");
+                      }}
+                    />
+                  </li>
+                )}
+                {isAuthenticated && (
+                  <li
+                    className="animate-fadeInUp animation-delay-400 opacity-0"
+                    style={{ animationFillMode: "forwards" }}
+                  >
+                    <BuildingOffice2Icon
+                      onClick={() => {
+                        router.push("/user/estates");
+                      }}
+                      width={22}
+                      height={22}
+                      className="cursor-pointer transition-transform duration-200 hover:scale-110"
+                    />
+                  </li>
+                )}
+                {isAuthenticated && (
+                  <li
+                    className="animate-fadeInUp animation-delay-500 opacity-0"
+                    style={{ animationFillMode: "forwards" }}
+                  >
                     <Image
                       onClick={() => {
                         router.push("/");
                         logout();
+                        toast.success("Вы успешно вышли");
                       }}
                       width={22}
                       height={22}
@@ -140,6 +176,42 @@ export default function Header() {
           )}
         </div>
       </div>
+
+      <style jsx>{`
+        @keyframes fadeInUp {
+          0% {
+            opacity: 0;
+            transform: translateY(-10px);
+          }
+          100% {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        .animate-fadeInUp {
+          animation: fadeInUp 0.3s ease-out;
+        }
+
+        .animation-delay-100 {
+          animation-delay: 0.1s;
+        }
+
+        .animation-delay-200 {
+          animation-delay: 0.2s;
+        }
+
+        .animation-delay-300 {
+          animation-delay: 0.3s;
+        }
+
+        .animation-delay-400 {
+          animation-delay: 0.4s;
+        }
+        .animation-delay-500 {
+          animation-delay: 0.5s;
+        }
+      `}</style>
     </header>
   );
 }

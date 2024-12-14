@@ -2,16 +2,19 @@
 
 import { EstateRead } from "@/app/lib/definitions";
 import { getEstateById } from "@/app/seed/route";
+import AdminHeader from "@/app/ui/admin/header";
 import { Breadcrumbs } from "@/app/ui/breadcrumbs/breadcrumbs";
 import EstateComponent from "@/app/ui/components/estate/component";
+import { AuthContext } from "@/app/ui/context/auth";
 import Container from "@/app/ui/structure/container";
 import Footer from "@/app/ui/structure/footer";
 import Header from "@/app/ui/structure/header";
 import { useParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useContext, useEffect, useState } from "react";
 
 export default function BuyEstatePage() {
   const params = useParams();
+  const { isAdmin } = useContext(AuthContext);
   const [estate, setEstate] = useState<EstateRead | null>(null);
   const [error, setError] = useState<string | null>(null);
   const { id } = params;
@@ -50,7 +53,7 @@ export default function BuyEstatePage() {
   if (error) {
     return (
       <>
-        <Header />
+        {isAdmin ? <AdminHeader /> : <Header />}
         <Container>
           <p style={{ color: "red" }}>{error}</p>
         </Container>
@@ -62,7 +65,7 @@ export default function BuyEstatePage() {
   if (!estate) {
     return (
       <>
-        <Header />
+        {isAdmin ? <AdminHeader /> : <Header />}
         <Container>
           <p>Загрузка...</p>
         </Container>
@@ -73,7 +76,7 @@ export default function BuyEstatePage() {
 
   return (
     <>
-      <Header />
+      {isAdmin ? <AdminHeader /> : <Header />}
       <Container>
         <Breadcrumbs />
         <EstateComponent estate={estate} />

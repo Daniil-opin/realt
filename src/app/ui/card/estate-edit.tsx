@@ -1,3 +1,6 @@
+"use client";
+
+import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { differenceInDays } from "date-fns";
@@ -7,11 +10,15 @@ import {
   LocalityTypeLabels,
   StreetTypeLabels,
 } from "@/app/lib/definitions";
-import { PencilSquareIcon } from "@heroicons/react/24/outline";
+import { PencilSquareIcon, TrashIcon } from "@heroicons/react/24/outline";
+import { deleteEstate } from "@/app/seed/route";
+import { toast } from "react-toastify";
 
 interface EstateEditCardProps {
   estate: EstateRead;
-  searchQuery?: string; // Передаем строку поиска для подсветки
+  searchQuery?: string;
+  onDelete?: (estateId: number) => void;
+  token: string;
 }
 
 function highlightMatch(text: string, query: string) {
@@ -33,7 +40,12 @@ function highlightMatch(text: string, query: string) {
 export default function EstateEditCard({
   estate,
   searchQuery = "",
+  onDelete,
+  token,
 }: EstateEditCardProps) {
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
   const imageUrl =
     estate.images.length > 0
       ? estate.images[0].image_url
@@ -75,8 +87,29 @@ export default function EstateEditCard({
   const daysDiff = differenceInDays(now, createdDate);
   const showNewLabel = daysDiff <= 3;
 
+  const handleDelete = async () => {
+    const confirmDelete = confirm(
+      "Вы уверены, что хотите удалить этот объект?",
+    );
+    if (!confirmDelete) return;
+
+    setIsDeleting(true);
+    setError(null);
+    try {
+      await deleteEstate(estate.id, token);
+      if (onDelete) {
+        onDelete(estate.id);
+      }
+      toast.success("Объявление удалено");
+    } catch (err) {
+      toast.error(`Не удалось удалить объект: ${err}`);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   return (
-    <div className="relative space-y-6 rounded-[20px] bg-white">
+    <div className="relative space-y-6 rounded-[20px] bg-white shadow-md">
       <div className="relative">
         <Image
           src={getProcessedSrc(imageUrl)}
@@ -108,13 +141,48 @@ export default function EstateEditCard({
             </span>
             <span>{priceSuffix}</span>
           </div>
-          <Link
-            href={`/sale/${estate.id}`}
-            className="flex items-center justify-center rounded-full p-2 shadow-[0px_0px_4px_0px_rgba(0,0,0,0.05)]"
-            aria-label="Редактировать"
-          >
-            <PencilSquareIcon className="text-blue-500 hover:text-blue-700 h-5 w-5 transition-transform duration-200 hover:scale-110" />
-          </Link>
+          <div className="flex items-center space-x-2">
+            <Link
+              href={`/sale/${estate.id}`}
+              className="flex items-center justify-center rounded-full p-2 shadow-[0px_0px_4px_0px_rgba(0,0,0,0.05)]"
+              aria-label="Редактировать"
+            >
+              <PencilSquareIcon className="text-blue-500 hover:text-blue-700 h-5 w-5 transition-transform duration-200 hover:scale-110" />
+            </Link>
+            <button
+              onClick={handleDelete}
+              disabled={isDeleting}
+              className={`flex items-center justify-center rounded-full p-2 shadow-[0px_0px_4px_0px_rgba(0,0,0,0.05)] transition-colors duration-200 ${
+                isDeleting ? "cursor-not-allowed" : "text-red-600"
+              }`}
+              aria-label="Удалить"
+            >
+              {isDeleting ? (
+                <svg
+                  className="h-5 w-5 animate-spin text-white"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  ></circle>
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8v8H4z"
+                  ></path>
+                </svg>
+              ) : (
+                <TrashIcon className="h-5 w-5 text-red-600 transition-transform duration-200 hover:scale-110" />
+              )}
+            </button>
+          </div>
         </div>
         <p className="mb-6 text-sm leading-[1.5] text-black/70">
           {highlightMatch(fullAddress, searchQuery)}
@@ -125,6 +193,7 @@ export default function EstateEditCard({
         >
           Подробнее
         </Link>
+        {error && <p className="mt-2 text-sm text-red-500">Ошибка: {error}</p>}
       </div>
     </div>
   );

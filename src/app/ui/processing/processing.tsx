@@ -6,6 +6,7 @@ import Image from "next/image";
 import { FilterParams } from "@/app/seed/route";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useDebounce } from "@/app/lib/hooks";
+import { toast } from "react-toastify";
 
 export enum PropertyType {
   Residential = "residential",
@@ -247,6 +248,8 @@ export default function Processing({ onFilterChange }: ProcessingProps) {
     if (onFilterChange) {
       onFilterChange(filters);
     }
+
+    toast.success("Фильтры сброшены");
   };
 
   // При изменении сортировки или debouncedSearch - обновляем URL и вызов

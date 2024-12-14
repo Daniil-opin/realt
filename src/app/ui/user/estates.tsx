@@ -1,27 +1,32 @@
+// components/user-estates.tsx
+
 "use client";
 
+import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import EstateTable from "../table/estate";
 import EstateEditCard from "../card/estate-edit";
-import { useEffect, useState } from "react";
 import { getUserOwnEstates } from "@/app/seed/route";
 import { EstateRead } from "@/app/lib/definitions";
 import Processing from "../processing/processing";
 import { FilterParams } from "@/app/seed/route";
-import { useSearchParams } from "next/navigation";
 
 export default function UserEstates() {
   const [userEstates, setUserEstates] = useState<EstateRead[]>([]);
   const [searchQuery, setSearchQuery] = useState<string>("");
+  const [token, setToken] = useState<string | null>(null);
   const searchParams = useSearchParams();
 
   const fetchEstates = async (filters: FilterParams) => {
-    const token = localStorage.getItem("token");
-    if (!token) return;
+    const fetchedToken = localStorage.getItem("token");
+    if (!fetchedToken) return;
+
+    setToken(fetchedToken); // Устанавливаем токен в состояние
 
     console.log("Fetching estates with filters:", filters);
 
     try {
-      const data = await getUserOwnEstates(token, filters);
+      const data = await getUserOwnEstates(fetchedToken, filters);
       setUserEstates(data);
       setSearchQuery(filters.search_query || "");
     } catch (error) {
@@ -30,8 +35,8 @@ export default function UserEstates() {
   };
 
   useEffect(() => {
-    const token = localStorage.getItem("token");
-    if (token) {
+    const fetchedToken = localStorage.getItem("token");
+    if (fetchedToken) {
       const initialFilters: FilterParams = {
         deal_type: searchParams.get("deal_type") || "buy",
         property_type: searchParams.get("property_type") || undefined,
@@ -54,6 +59,12 @@ export default function UserEstates() {
     fetchEstates(filters);
   };
 
+  const handleDelete = (deletedId: number) => {
+    setUserEstates((prevEstates) =>
+      prevEstates.filter((estate) => estate.id !== deletedId),
+    );
+  };
+
   return (
     <>
       <h2 className="mb-5 text-3xl font-semibold">Мои объявления</h2>
@@ -64,6 +75,8 @@ export default function UserEstates() {
             key={estate.id}
             estate={estate}
             searchQuery={searchQuery}
+            onDelete={handleDelete}
+            token={token || ""}
           />
         ))}
       </EstateTable>

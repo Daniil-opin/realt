@@ -1,13 +1,13 @@
 "use client";
 
-import { getUserData, User } from "@/app/seed/route";
+import { getUserData, UserReadExtended } from "@/app/seed/route";
 import { useRouter } from "next/navigation";
 import React, { createContext, useState, ReactNode, useEffect } from "react";
 
 interface AuthContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
-  user: User | null;
+  user: UserReadExtended | null;
   isAdmin: boolean;
   login: (token: string) => Promise<void>;
   logout: () => void;
@@ -29,10 +29,8 @@ interface AuthProviderProps {
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<UserReadExtended | null>(null);
   const [isAdmin, setIsAdmin] = useState<boolean>(false);
-
-  console.log(user);
 
   const router = useRouter();
 
@@ -40,11 +38,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setIsLoading(true);
     try {
       localStorage.setItem("token", token);
-      const data: User = await getUserData(token);
+      const data: UserReadExtended = await getUserData(token);
       setIsAuthenticated(true);
       setUser(data);
       setIsAdmin(data.role.id === 1);
-      router.push("/");
+      if (data.role.id === 1) {
+        router.push("/admin/estates");
+      } else {
+        router.push("/");
+      }
     } catch (error) {
       console.error("Ошибка при входе:", error);
       setIsAuthenticated(false);
@@ -62,7 +64,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setIsAuthenticated(false);
     setUser(null);
     setIsAdmin(false);
-    router.push("/");
     setIsLoading(false);
   };
 
@@ -71,7 +72,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const token = localStorage.getItem("token");
       if (token) {
         try {
-          const data: User = await getUserData(token);
+          const data: UserReadExtended = await getUserData(token);
           setIsAuthenticated(true);
           setUser(data);
           setIsAdmin(data.role.id === 1);

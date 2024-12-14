@@ -206,7 +206,8 @@ export interface EstateUpdate {
   address?: AddressCreate;
   amenities?: AmenityCreate;
   characteristics?: CharacteristicCreate;
-  images?: EstateImageCreate[];
+  images_to_keep: string[];
+  images_to_add: EstateImageCreate[];
 }
 
 export const DealTypeLabels: Record<DealType, string> = {

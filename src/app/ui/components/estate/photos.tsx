@@ -39,7 +39,7 @@ export default function EstatePhotos({
             className="cursor-pointer rounded-2xl object-cover object-center md:rounded-[20px]"
           />
         </div>
-        {images.slice(1, -1).map(({ id, image_url }) => (
+        {images.slice(1).map(({ id, image_url }) => (
           <div
             key={id}
             onClick={() => openModal(image_url, "Основная картинка")}

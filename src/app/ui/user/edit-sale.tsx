@@ -1,15 +1,10 @@
-// pages/edit-estate.tsx
 "use client";
 
 import { useState, useEffect } from "react";
 import { useForm, Controller, SubmitHandler } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import {
-  BuildingOffice2Icon,
-  ChevronDownIcon,
-  XMarkIcon,
-} from "@heroicons/react/24/outline";
+import { BuildingOffice2Icon, XMarkIcon } from "@heroicons/react/24/outline";
 import Image from "next/image";
 import { convertFileToBase64, getProcessedSrc } from "@/app/lib/utils";
 import {
@@ -20,6 +15,7 @@ import {
   LocalityType,
   StreetType,
   Period,
+  EstateUpdate,
 } from "@/app/lib/definitions";
 import { getEstateById, updateEstate } from "@/app/seed/route";
 import { useParams, useRouter } from "next/navigation";
@@ -31,6 +27,7 @@ import { InputNumber } from "../input/number";
 import InputTextarea from "../input/textarea";
 import YandexMap from "../map/yandex";
 import { DevTool } from "@hookform/devtools"; // Для отладки
+import { toast } from "react-toastify";
 
 interface SelectOption {
   value: string;
@@ -46,7 +43,7 @@ interface SelectionCategoryProps {
   onSelect: (value: string) => void;
 }
 
-// Обновлённая схема Zod с обязательным полем amenities
+// Обновлённая схема Zod с обязательными полями images_to_keep и images_to_add
 const schema = z.object({
   deal_type: z.enum([DealType.Buy, DealType.Rent]),
   property_type: z.enum([PropertyType.Residential, PropertyType.Commercial]),
@@ -99,7 +96,14 @@ const schema = z.object({
     price: z.number().optional(),
     payment: z.boolean().optional(),
   }),
-  images: z.array(z.string()).max(4, "Максимум 4 фото"),
+  images_to_keep: z.array(z.string()).default([]), // Обязательное поле с дефолтом
+  images_to_add: z
+    .array(
+      z.object({
+        image_base64: z.string(),
+      }),
+    )
+    .default([]), // Обязательное поле с дефолтом
 });
 
 type FormData = z.infer<typeof schema>;
@@ -147,10 +151,11 @@ export default function EditEstatePage() {
   const router = useRouter();
   const estateId = parseInt(params.id as string, 10);
 
-  const [loadedImages, setLoadedImages] = useState<string[]>([]);
-  const [newImages, setNewImages] = useState<{ file: File; base64: string }[]>(
+  const [loadedImages, setLoadedImages] = useState<string[]>([]); // Существующие изображения
+  const [imagesToKeep, setImagesToKeep] = useState<string[]>([]); // Изображения, которые будут сохранены
+  const [imagesToAdd, setImagesToAdd] = useState<{ image_base64: string }[]>(
     [],
-  );
+  ); // Новые изображения
 
   const {
     register,
@@ -198,7 +203,8 @@ export default function EditEstatePage() {
         price: 100000,
         payment: false,
       },
-      images: [],
+      images_to_keep: [],
+      images_to_add: [],
     },
   });
 
@@ -290,12 +296,15 @@ export default function EditEstatePage() {
     },
   ];
 
+  // Фетч данных недвижимости
   useEffect(() => {
     const fetchEstate = async () => {
       try {
         const token = localStorage.getItem("token");
         if (!token) {
-          alert("Вы должны войти в систему для редактирования недвижимости.");
+          toast.warning(
+            "Вы должны войти в систему для редактирования недвижимости.",
+          );
           router.back();
           return;
         }
@@ -305,6 +314,8 @@ export default function EditEstatePage() {
           getProcessedSrc(img.image_url),
         );
         setLoadedImages(existingImages);
+        setImagesToKeep(existingImages); // Изначально все существующие изображения сохраняем
+
         // Установка значений формы
         reset({
           deal_type: data.deal_type as DealType,
@@ -342,10 +353,11 @@ export default function EditEstatePage() {
             price: data.characteristics?.price || 100000,
             payment: data.characteristics?.payment || false,
           },
-          images: existingImages, // Подстановка существующих изображений
+          images_to_keep: existingImages, // Существующие изображения сохраняем
+          images_to_add: [], // Новые изображения изначально пусты
         });
       } catch (error: any) {
-        alert("Не удалось загрузить данные недвижимости.");
+        toast.error("Не удалось загрузить данные недвижимости.");
         console.error(error);
         router.back();
       }
@@ -368,8 +380,8 @@ export default function EditEstatePage() {
     const files = e.target.files;
     if (!files) return;
 
-    const currentImages = watch("images");
-    const remainingSlots = 4 - currentImages.length;
+    const currentImages = watch("images_to_keep");
+    const remainingSlots = 4 - currentImages.length - imagesToAdd.length;
 
     const filesArray = Array.from(files).slice(0, remainingSlots);
 
@@ -377,59 +389,53 @@ export default function EditEstatePage() {
 
     try {
       const base64Images = await Promise.all(base64Promises);
-      const updatedImages = [...currentImages, ...base64Images];
-      setValue("images", updatedImages);
-      setNewImages((prev) => [
-        ...prev,
-        ...filesArray.map((file, idx) => ({ file, base64: base64Images[idx] })),
-      ]);
+      const newImagesData = base64Images.map((base64) => ({
+        image_base64: base64.split(",")[1], // Удаление префикса
+      }));
+      setImagesToAdd((prev) => [...prev, ...newImagesData]);
+      setValue("images_to_add", [...imagesToAdd, ...newImagesData]);
     } catch (error) {
       console.error("Ошибка при загрузке файлов:", error);
     }
   };
 
   // Обработка удаления изображений
-  const handleRemoveImage = (index: number) => {
-    const currentImages = watch("images");
-    const updatedImages = currentImages.filter((_, i) => i !== index);
-    setValue("images", updatedImages);
-
-    // Обновление состояний loadedImages и newImages при необходимости
-    if (index < loadedImages.length) {
-      setLoadedImages(loadedImages.filter((_, i) => i !== index));
+  const handleRemoveImage = (index: number, isNew: boolean) => {
+    if (isNew) {
+      // Удаление нового изображения
+      const updatedImagesToAdd = imagesToAdd.filter((_, i) => i !== index);
+      setImagesToAdd(updatedImagesToAdd);
+      setValue("images_to_add", updatedImagesToAdd);
     } else {
-      const newIndex = index - loadedImages.length;
-      setNewImages(newImages.filter((_, i) => i !== newIndex));
+      // Удаление существующего изображения
+      const updatedImagesToKeep = imagesToKeep.filter((_, i) => i !== index);
+      setImagesToKeep(updatedImagesToKeep);
+      setValue("images_to_keep", updatedImagesToKeep);
     }
   };
 
   // Обработка отправки формы
   const onSubmit: SubmitHandler<FormData> = async (data) => {
     // Проверка количества фотографий
-    const totalImages = data.images.length;
+    const totalImages = data.images_to_keep.length + data.images_to_add.length;
     if (totalImages < 2) {
-      alert("Минимум 2 фотографии.");
+      toast.warning("Минимум 2 фотографии.");
       return;
     }
     if (totalImages > 4) {
-      alert("Максимум 4 фотографии.");
+      toast.warning("Максимум 4 фотографии.");
       return;
     }
 
     try {
       const token = localStorage.getItem("token");
       if (!token) {
-        alert("Вы должны войти в систему для обновления недвижимости.");
+        toast.warning("Вы должны войти в систему для обновления недвижимости.");
         return;
       }
 
-      // Подготовка новых изображений для отправки
-      const imagesToSend = newImages.map((img) => ({
-        image_base64: img.base64.split(",")[1], // Удаление префикса data:image/...;base64,
-      }));
-
       // Подготовка данных для обновления
-      const estateUpdateData = {
+      const estateUpdateData: EstateUpdate = {
         deal_type: data.deal_type,
         property_type: data.property_type,
         property_kind: data.property_kind,
@@ -442,16 +448,20 @@ export default function EditEstatePage() {
             ? data.amenities
             : undefined,
         characteristics: data.characteristics,
-        images: imagesToSend,
+        images_to_keep: data.images_to_keep,
+        images_to_add: data.images_to_add,
       };
+
+      console.log("Новые данные:", estateUpdateData); // Для отладки
 
       // Отправка данных на сервер
       await updateEstate(estateId, estateUpdateData, token);
-      alert("Данные успешно обновлены!");
+      toast.success("Данные успешно обновлены!");
       router.back();
     } catch (error: any) {
-      console.error("Ошибка при обновлении недвижимости:", error);
-      alert(`Ошибка при обновлении недвижимости: ${error.message || error}`);
+      toast.error(
+        `Ошибка при обновлении недвижимости: ${error.message || error}`,
+      );
     }
   };
 
@@ -470,7 +480,8 @@ export default function EditEstatePage() {
 
   return (
     <>
-      <DevTool control={control} /> {/* Для отладки */}
+      {/* Условный рендеринг DevTool только в режиме разработки */}
+      {process.env.NODE_ENV === "development" && <DevTool control={control} />}
       <h2 className="my-12 text-3xl font-semibold text-black">
         Редактировать объявление
       </h2>
@@ -554,14 +565,14 @@ export default function EditEstatePage() {
           {/* Фотографии */}
           <Controller
             control={control}
-            name="images"
+            name="images_to_keep"
             render={({ field }) => (
               <div className="space-y-5">
                 <h2 className="text-lg font-semibold">Фото</h2>
                 <div className="mb-4 flex flex-wrap gap-4">
-                  {/* Отображение всех изображений */}
+                  {/* Отображение существующих изображений */}
                   {field.value.map((img, index) => (
-                    <div key={`image-${index}`} className="relative">
+                    <div key={`existing-image-${index}`} className="relative">
                       <Image
                         src={img}
                         alt={`Фото ${index + 1}`}
@@ -571,10 +582,30 @@ export default function EditEstatePage() {
                       />
                       <button
                         type="button"
-                        onClick={() => handleRemoveImage(index)}
-                        className="absolute right-0 top-0 flex h-full w-full items-center justify-center rounded bg-transparent p-1 text-transparent transition-all duration-200 hover:bg-black/60 hover:text-white"
+                        onClick={() => handleRemoveImage(index, false)}
+                        className="absolute right-0 top-0 flex h-6 w-6 items-center justify-center rounded-full bg-black bg-opacity-50 text-white hover:bg-opacity-75"
                       >
-                        <XMarkIcon className="h-10 w-10" />
+                        <XMarkIcon className="h-4 w-4" />
+                      </button>
+                    </div>
+                  ))}
+
+                  {/* Отображение новых добавленных изображений */}
+                  {imagesToAdd.map((img, index) => (
+                    <div key={`new-image-${index}`} className="relative">
+                      <Image
+                        src={`data:image/*;base64,${img.image_base64}`}
+                        alt={`Новое фото ${index + 1}`}
+                        width={100}
+                        height={100}
+                        className="h-24 w-24 rounded object-cover"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveImage(index, true)}
+                        className="absolute right-0 top-0 flex h-6 w-6 items-center justify-center rounded-full bg-black bg-opacity-50 text-white hover:bg-opacity-75"
+                      >
+                        <XMarkIcon className="h-4 w-4" />
                       </button>
                     </div>
                   ))}
@@ -585,11 +616,12 @@ export default function EditEstatePage() {
                   id="images"
                   label=""
                   onChange={handleFileChange}
-                  disabled={field.value.length >= 4}
+                  disabled={field.value.length + imagesToAdd.length >= 4}
                 />
-                {errors.images && (
+                {(errors.images_to_keep || errors.images_to_add) && (
                   <p className="text-sm text-red-500">
-                    {errors.images.message}
+                    {errors.images_to_keep?.message ||
+                      errors.images_to_add?.message}
                   </p>
                 )}
               </div>
@@ -616,6 +648,7 @@ export default function EditEstatePage() {
             />
             <div className="flex space-x-2">
               <CustomSelect
+                classNameSelect="max-w-24"
                 id="address.locality_type"
                 options={localityOptions}
                 placeholder="Тип населенного пункта"
@@ -632,6 +665,7 @@ export default function EditEstatePage() {
             </div>
             <div className="flex space-x-2">
               <CustomSelect
+                classNameSelect="max-w-24"
                 id="address.street_type"
                 options={streetOptions}
                 placeholder="Тип улицы"

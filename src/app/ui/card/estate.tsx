@@ -15,12 +15,35 @@ import {
   removeEstateFromFavorites,
 } from "@/app/seed/route";
 import { AuthContext } from "../context/auth";
+import { toast } from "react-toastify";
 
 interface EstateCardProps {
   estate: EstateRead;
+  searchQuery?: string; // Опциональный пропс для поиска
 }
 
-export default function EstateCard({ estate }: EstateCardProps) {
+function highlightMatch(text: string, query: string) {
+  if (!query) return text;
+
+  const escapedQuery = query.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const regex = new RegExp(`(${escapedQuery})`, "gi");
+  const parts = text.split(regex);
+
+  return parts.map((part, index) =>
+    regex.test(part) ? (
+      <span key={index} className="text-sm text-orange-500 underline">
+        {part}
+      </span>
+    ) : (
+      part
+    ),
+  );
+}
+
+export default function EstateCard({
+  estate,
+  searchQuery = "",
+}: EstateCardProps) {
   const { isAuthenticated } = useContext(AuthContext);
 
   const imageUrl =
@@ -89,7 +112,7 @@ export default function EstateCard({ estate }: EstateCardProps) {
   const handleFavoriteClick = async () => {
     const token = localStorage.getItem("token");
     if (!token || !isAuthenticated) {
-      // Если пользователь не авторизован, просто ничего не делаем
+      toast.warn("Пожалуйста, войдите в систему для добавления в избранное");
       return;
     }
     if (loadingFavorite) return;
@@ -100,14 +123,16 @@ export default function EstateCard({ estate }: EstateCardProps) {
         // Удаляем из избранного
         await removeEstateFromFavorites(estate.id, token);
         setIsFavorite(false);
+        toast.success("Убрано из избранного");
       } else {
         // Добавляем в избранное
         await addEstateToFavorites(estate.id, token);
         setIsFavorite(true);
+        toast.success("Добавлено в избранное");
       }
     } catch (error) {
       console.error("Ошибка при изменении избранного:", error);
-      alert("Не удалось изменить избранное");
+      toast.error("Не удалось изменить избранное");
     } finally {
       setLoadingFavorite(false);
     }
@@ -142,28 +167,26 @@ export default function EstateCard({ estate }: EstateCardProps) {
         <div className="mb-3 flex w-full items-center justify-between">
           <div className="flex w-max items-center justify-start rounded-xl bg-blue px-2 py-[6px] text-white">
             <span className="mr-1 text-2xl font-semibold uppercase">
-              ${price}
+              {`$${price.toLocaleString("en-US")}`}{" "}
             </span>
             <span>{priceSuffix}</span>
           </div>
-          {isAuthenticated && (
-            <button
-              onClick={handleFavoriteClick}
-              disabled={loadingFavorite}
-              className="flex items-center justify-center rounded-full p-2 shadow-[0px_0px_4px_0px_rgba(0,0,0,0.05)] focus:outline-none"
-            >
-              <HeartIcon
-                fill={isFavorite ? "#2f6feb" : "none"}
-                color={isFavorite ? "#2f6feb" : "#2f6feb"}
-                className={`transition-transform duration-200 hover:scale-110 ${
-                  loadingFavorite ? "opacity-50" : "opacity-100"
-                }`}
-              />
-            </button>
-          )}
+          <button
+            onClick={handleFavoriteClick}
+            disabled={loadingFavorite}
+            className="flex items-center justify-center rounded-full p-2 shadow-[0px_0px_4px_0px_rgba(0,0,0,0.05)] focus:outline-none"
+          >
+            <HeartIcon
+              fill={isFavorite ? "#2f6feb" : "none"}
+              color={isFavorite ? "#2f6feb" : "#2f6feb"}
+              className={`transition-transform duration-200 hover:scale-110 ${
+                loadingFavorite ? "opacity-50" : "opacity-100"
+              }`}
+            />
+          </button>
         </div>
         <p className="mb-6 text-sm leading-[1.5] text-black/70">
-          {fullAddress}
+          {highlightMatch(fullAddress, searchQuery)}
         </p>
         <Link
           href={`/estates/${estate.id}`}

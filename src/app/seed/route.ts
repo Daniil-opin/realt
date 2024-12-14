@@ -375,3 +375,18 @@ export const checkEstateInFavorites = async (
     );
   }
 };
+
+export const generateReport = async (token: string): Promise<Blob> => {
+  try {
+    const response = await axios.get(
+      `${process.env.NEXT_PUBLIC_BACKEND_JAVA}/api/reports/generate`,
+      {
+        ...getAuthHeader(token),
+        responseType: "blob",
+      },
+    );
+    return response.data;
+  } catch (error: AxiosError | unknown) {
+    return handleAxiosError(error, "Не удалось сгенерировать отчёт");
+  }
+};

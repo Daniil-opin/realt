@@ -11,23 +11,19 @@ import { z } from "zod";
 import { updateSchema } from "@/app/lib/action";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { UpdateUser, updateUser } from "@/app/seed/route";
-import UserApplication from "./application";
-import { ChevronDoubleRightIcon } from "@heroicons/react/24/outline";
-import { useRouter } from "next/navigation";
+import { updateUser } from "@/app/seed/route";
+import { toast } from "react-toastify";
 
 type UpdateFormData = z.infer<typeof updateSchema>;
 
 export default function UserProfile() {
   const { user, isLoading } = useContext(AuthContext);
-  const router = useRouter();
 
   const {
     handleSubmit,
     control,
     formState: { errors },
     setValue,
-    reset,
     register,
   } = useForm<UpdateFormData>({
     resolver: zodResolver(updateSchema),
@@ -51,19 +47,14 @@ export default function UserProfile() {
 
   const onSubmit = async (data: UpdateFormData) => {
     const token = localStorage.getItem("token");
-
-    const payload: UpdateUser = {
-      ...data,
-      role_id: user?.role.id || 3,
-      consent: true,
-    };
-
+    console.log(data);
     if (token) {
       try {
-        await updateUser(token, payload);
-        reset();
+        await updateUser(token, data);
+        setValue("password", "");
+        toast.success("Данные успешно изменены");
       } catch (error) {
-        console.error("Не удалось обновить данные!", error);
+        toast.error(`Не удалось обновить данные: ${error}`);
       }
     }
   };
@@ -79,7 +70,7 @@ export default function UserProfile() {
           <h1 className="my-12 text-3xl font-semibold text-black">
             Персональная информация
           </h1>
-          <div className="mb-32 grid grid-cols-1 gap-10 lg:grid-cols-2 xl:grid-cols-[3fr_2fr] 2xl:grid-cols-[2fr_1fr]">
+          <div className="mb-32">
             <form
               onSubmit={handleSubmit(onSubmit)}
               className="rounded-[20px] bg-white p-10"
@@ -122,7 +113,7 @@ export default function UserProfile() {
                 />
                 <InputPassword
                   id="password"
-                  label="Подтвердите изменения"
+                  label="Пароль"
                   placeholder="Ваш пароль"
                   register={register("password")}
                   error={errors.password?.message}
@@ -135,18 +126,6 @@ export default function UserProfile() {
                 Сохранить
               </button>
             </form>
-            <div className="h-full w-full space-y-5 rounded-[20px] bg-white p-10">
-              <div className="flex w-full items-center justify-between">
-                <h2 className="text-xl font-semibold">Ваши объявления</h2>
-                <ChevronDoubleRightIcon
-                  onClick={() => router.push("/user/estates")}
-                  className="h-5 w-5 cursor-pointer"
-                />
-              </div>
-              <div className="grid grid-cols-1 gap-y-3">
-                <UserApplication />
-              </div>
-            </div>
           </div>
         </>
       )}

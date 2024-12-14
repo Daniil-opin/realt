@@ -9,6 +9,7 @@ import { useForm } from "react-hook-form";
 import { useContext } from "react";
 import { AuthContext } from "../context/auth";
 import { loginUser } from "@/app/seed/route";
+import { toast } from "react-toastify";
 
 type LoginFormData = z.infer<typeof loginSchema>;
 
@@ -24,8 +25,9 @@ export default function Authorization() {
     try {
       const res = await loginUser(data);
       login(res.token);
+      toast.success("Вы авторизированы");
     } catch (error) {
-      console.error("Не удалось зарегистрироваться", error);
+      toast.error(`Не удалось авторизоваться: ${error}`);
     }
   };
 

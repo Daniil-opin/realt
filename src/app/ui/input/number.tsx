@@ -57,7 +57,7 @@ export function InputNumber({
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    let inputValue = e.target.value;
+    const inputValue = e.target.value;
 
     // Разрешить только цифры и одну точку, если разрешено
     let newValue = inputValue.replace(/[^0-9.]/g, "");

@@ -8,16 +8,18 @@ import { useRouter, usePathname } from "next/navigation";
 import {
   Bars3Icon,
   BuildingOffice2Icon,
-  ChartPieIcon,
+  DocumentChartBarIcon,
   UsersIcon,
   XMarkIcon,
 } from "@heroicons/react/24/outline";
 import { useClickOutsideAndEscape } from "@/app/lib/hooks";
+import { generateReport } from "@/app/seed/route";
+import { toast } from "react-toastify";
 
 export default function AdminHeader() {
   const router = useRouter();
   const pathname = usePathname();
-  const { isAuthenticated, logout } = useContext(AuthContext);
+  const { logout } = useContext(AuthContext);
   const [menuOpen, setMenuOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement | null>(null);
 
@@ -26,6 +28,30 @@ export default function AdminHeader() {
   useEffect(() => {
     setMenuOpen(false);
   }, [pathname]);
+
+  const handleDownloadReport = async () => {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      toast.warning("Пожалуйста, войдите в систему, чтобы скачать отчёт.");
+      return;
+    }
+
+    try {
+      const blob = await generateReport(token);
+      const url = window.URL.createObjectURL(new Blob([blob]));
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", "estate_report.xlsx");
+      document.body.appendChild(link);
+      link.click();
+      link.parentNode?.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      toast.success("Отчёт получен");
+    } catch (error) {
+      console.error("Ошибка при скачивании отчёта:", error);
+      toast.error("Не удалось скачать отчёт. Попробуйте позже.");
+    }
+  };
 
   return (
     <header className="w-full bg-white">
@@ -55,19 +81,6 @@ export default function AdminHeader() {
                   className="animate-fadeInUp animation-delay-100 opacity-0"
                   style={{ animationFillMode: "forwards" }}
                 >
-                  <ChartPieIcon
-                    onClick={() => router.push("/admin/analytics")}
-                    fill="none"
-                    color={isAuthenticated ? "black" : "#2f6feb"}
-                    width={24}
-                    height={24}
-                    className="cursor-pointer text-black transition-transform duration-200 hover:scale-110"
-                  />
-                </li>
-                <li
-                  className="animate-fadeInUp animation-delay-200 opacity-0"
-                  style={{ animationFillMode: "forwards" }}
-                >
                   <UsersIcon
                     width={22}
                     height={22}
@@ -79,7 +92,7 @@ export default function AdminHeader() {
                   />
                 </li>
                 <li
-                  className="animate-fadeInUp animation-delay-300 opacity-0"
+                  className="animate-fadeInUp animation-delay-200 opacity-0"
                   style={{ animationFillMode: "forwards" }}
                 >
                   <BuildingOffice2Icon
@@ -93,13 +106,25 @@ export default function AdminHeader() {
                   />
                 </li>
                 <li
+                  className="animate-fadeInUp animation-delay-300 opacity-0"
+                  style={{ animationFillMode: "forwards" }}
+                >
+                  <DocumentChartBarIcon
+                    width={22}
+                    height={22}
+                    fill={"none"}
+                    className="cursor-pointer transition-transform duration-200 hover:scale-110"
+                    onClick={handleDownloadReport}
+                  />
+                </li>
+                <li
                   className="animate-fadeInUp animation-delay-400 opacity-0"
                   style={{ animationFillMode: "forwards" }}
                 >
                   <Image
                     onClick={() => {
-                      router.push("/");
                       logout();
+                      toast.success("Вы успешно вышли");
                     }}
                     width={22}
                     height={22}

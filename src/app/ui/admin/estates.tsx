@@ -27,6 +27,7 @@ import {
   TrashIcon,
 } from "@heroicons/react/24/outline";
 import { useRouter } from "next/navigation";
+import { toast } from "react-toastify";
 
 interface Property {
   id: number;
@@ -123,9 +124,9 @@ const AdminPropertyTable: React.FC = () => {
 
         await deleteEstate(id, token);
         setProperties(properties.filter((property) => property.id !== id));
-        alert("Недвижимость успешно удалена");
+        toast.success("Недвижимость успешно удалена");
       } catch (err) {
-        alert("Не удалось удалить недвижимость");
+        toast.error("Не удалось удалить недвижимость");
         console.error(err);
       }
     }
@@ -153,7 +154,7 @@ const AdminPropertyTable: React.FC = () => {
   const handleStatusChange = async (id: number, newStatus: string) => {
     const token = localStorage.getItem("token");
     if (!token) {
-      alert("Нет токена");
+      toast.warning("Нет токена");
       return;
     }
     try {
@@ -165,9 +166,9 @@ const AdminPropertyTable: React.FC = () => {
             : prop,
         ),
       );
-      alert("Статус успешно обновлён");
+      toast.success("Статус успешно изменён");
     } catch (error) {
-      alert("Не удалось изменить статус");
+      toast.error("Не удалось изменить статус");
       console.error(error);
     }
   };
@@ -277,9 +278,7 @@ const AdminPropertyTable: React.FC = () => {
                 <td className="space-x-3 border-b p-4">
                   <button
                     className="text-blue-500 hover:text-blue-700"
-                    onClick={() =>
-                      router.push(`/${property.dealType}/${property.id}`)
-                    }
+                    onClick={() => router.push(`/estates/${property.id}`)}
                     aria-label="Редактировать"
                   >
                     <EyeIcon className="h-5 w-5 transition-all duration-200 hover:text-blue" />
@@ -362,9 +361,7 @@ const AdminPropertyTable: React.FC = () => {
               <div className="mt-4 flex space-x-4">
                 <button
                   className="text-blue-500 hover:text-blue-700"
-                  onClick={() =>
-                    router.push(`/${property.dealType}/${property.id}`)
-                  }
+                  onClick={() => router.push(`/estates/${property.id}`)}
                   aria-label="Редактировать"
                 >
                   <EyeIcon className="h-5 w-5" />

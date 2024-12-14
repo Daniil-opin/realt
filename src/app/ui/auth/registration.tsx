@@ -11,6 +11,7 @@ import { InputTel } from "../input/tel";
 import { registerUser, RegisterUser } from "@/app/seed/route";
 import { useContext } from "react";
 import { AuthContext } from "../context/auth";
+import { toast } from "react-toastify";
 
 type RegistrationFormData = z.infer<typeof registrationSchema>;
 
@@ -48,8 +49,9 @@ export default function Registration() {
     try {
       const res = await registerUser(payload);
       login(res.token);
+      toast.success("Вы успешно зарегистрировались");
     } catch (error) {
-      console.error("Не удалось зарегистрироваться", error);
+      toast.error(`Не удалось зарегистрироваться: ${error}`);
     }
   };
 

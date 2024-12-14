@@ -1,5 +1,6 @@
 import { useContext, useEffect, useState } from "react";
 import { AuthContext } from "../ui/context/auth";
+import { useRouter } from "next/navigation";
 
 type Handler = (event: MouseEvent | KeyboardEvent) => void;
 
@@ -49,3 +50,26 @@ export function useDebounce<T>(value: T, delay: number): T {
 export function useAuth() {
   return useContext(AuthContext);
 }
+
+interface UseRequireAuthOptions {
+  requiredRole?: string;
+}
+
+const useRequireAuth = ({ requiredRole }: UseRequireAuthOptions = {}) => {
+  const { isAuthenticated, isLoading, isAdmin } = useContext(AuthContext);
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!isLoading) {
+      if (!isAuthenticated) {
+        router.push("/signin");
+      } else if (requiredRole === "admin" && !isAdmin) {
+        router.push("/unauthorized");
+      }
+    }
+  }, [isAuthenticated, isLoading, isAdmin, router, requiredRole]);
+
+  return { isAuthenticated, isLoading, isAdmin };
+};
+
+export default useRequireAuth;
