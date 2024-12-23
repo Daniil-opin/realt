@@ -159,7 +159,6 @@ export default function Header() {
                   >
                     <Image
                       onClick={() => {
-                        router.push("/");
                         logout();
                         toast.success("Вы успешно вышли");
                       }}

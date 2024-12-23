@@ -26,7 +26,6 @@ import { InputCheckbox } from "../input/consent";
 import { InputNumber } from "../input/number";
 import InputTextarea from "../input/textarea";
 import YandexMap from "../map/yandex";
-import { DevTool } from "@hookform/devtools"; // Для отладки
 import { toast } from "react-toastify";
 
 interface SelectOption {
@@ -356,7 +355,7 @@ export default function EditEstatePage() {
           images_to_keep: existingImages, // Существующие изображения сохраняем
           images_to_add: [], // Новые изображения изначально пусты
         });
-      } catch (error: any) {
+      } catch (error) {
         toast.error("Не удалось загрузить данные недвижимости.");
         console.error(error);
         router.back();
@@ -481,7 +480,6 @@ export default function EditEstatePage() {
   return (
     <>
       {/* Условный рендеринг DevTool только в режиме разработки */}
-      {process.env.NODE_ENV === "development" && <DevTool control={control} />}
       <h2 className="my-12 text-3xl font-semibold text-black">
         Редактировать объявление
       </h2>
@@ -583,9 +581,9 @@ export default function EditEstatePage() {
                       <button
                         type="button"
                         onClick={() => handleRemoveImage(index, false)}
-                        className="absolute right-0 top-0 flex h-6 w-6 items-center justify-center rounded-full bg-black bg-opacity-50 text-white hover:bg-opacity-75"
+                        className="absolute right-0 top-0 flex h-full w-full items-center justify-center rounded bg-transparent p-1 text-transparent transition-all duration-200 hover:bg-black/60 hover:text-white"
                       >
-                        <XMarkIcon className="h-4 w-4" />
+                        <XMarkIcon className="h-10 w-10" />
                       </button>
                     </div>
                   ))}

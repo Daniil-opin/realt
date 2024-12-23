@@ -9,32 +9,33 @@ import { AuthContext } from "@/app/ui/context/auth";
 import Container from "@/app/ui/structure/container";
 import Footer from "@/app/ui/structure/footer";
 import Header from "@/app/ui/structure/header";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { useContext, useEffect, useState } from "react";
+import { toast } from "react-toastify";
 
 export default function BuyEstatePage() {
   const params = useParams();
   const { isAdmin } = useContext(AuthContext);
   const [estate, setEstate] = useState<EstateRead | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const router = useRouter();
   const { id } = params;
 
   useEffect(() => {
     if (!id) {
-      setError("ID недвижимости отсутствует.");
+      toast.error("ID недвижимости отсутствует.");
       return;
     }
 
     const estateId = Array.isArray(id) ? id[0] : id;
 
     if (typeof estateId !== "string") {
-      setError("Некорректный формат ID недвижимости.");
+      toast.error("Некорректный формат ID недвижимости.");
       return;
     }
 
     const estateIdNumber = parseInt(estateId, 10);
     if (isNaN(estateIdNumber)) {
-      setError("ID недвижимости должно быть числом.");
+      toast.error("ID недвижимости должно быть числом.");
       return;
     }
 
@@ -43,24 +44,13 @@ export default function BuyEstatePage() {
         const res = await getEstateById(estateIdNumber);
         setEstate(res);
       } catch (error) {
-        setError("Не получилось получить estate по id.");
+        toast.error("Не получилось получить estate по id.");
+        router.back();
         console.error(error);
       }
     };
     fetchData();
   }, [id]);
-
-  if (error) {
-    return (
-      <>
-        {isAdmin ? <AdminHeader /> : <Header />}
-        <Container>
-          <p style={{ color: "red" }}>{error}</p>
-        </Container>
-        <Footer />
-      </>
-    );
-  }
 
   if (!estate) {
     return (

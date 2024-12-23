@@ -33,7 +33,7 @@ const YandexMap: React.FC<YandexMapProps> = ({
       const map = new window.ymaps.Map(mapRef.current, {
         center: initialCoordinates,
         zoom: 15,
-        controls: ["zoomControl", "fullscreenControl", "typeSelector"],
+        controls: ["zoomControl", "fullscreenControl", "typeSelector" ],
       });
 
       mapInstanceRef.current = map;

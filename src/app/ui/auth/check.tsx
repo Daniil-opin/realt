@@ -29,7 +29,7 @@ export default function AuthCheck({ children }: AuthCheckProps) {
 
       if (isUserPath) {
         if (!isAuthenticated) {
-          router.replace("/login");
+          router.replace("/");
           return;
         }
         if (isAdmin) {
